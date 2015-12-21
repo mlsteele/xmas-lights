@@ -9,9 +9,11 @@
 
 import time
 import colorsys
+import random
 from dotstar import Adafruit_DotStar
 
-NUMPIXELS = 600 # Number of LEDs in strip
+NUMPIXELS = 900 # Number of LEDs in strip
+# We have 300 LEDs per strip.
 
 # Here's how to control the strip from any two GPIO pins:
 datapin   = 23
@@ -19,7 +21,7 @@ clockpin  = 24
 strip     = Adafruit_DotStar(NUMPIXELS, datapin, clockpin, order="bgr")
 
 strip.begin()           # Initialize pins for output
-strip.setBrightness(30) # Limit brightness (out of 255)
+strip.setBrightness(255) # Limit brightness (out of 255)
 
 RED = 0xff0000
 GREEN = 0x00ff00
@@ -61,23 +63,27 @@ class Snake(object):
 
     def show(self):
         for i in xrange(self.length):
-            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 255 * (i/float(self.length))
+            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * (i/float(self.length))
             strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
+            # strip.setPixelColor(self.head + i, Color.hsv_to_hex(0, 1, 30))
 
 def strip_clear():
     for i in xrange(NUMPIXELS):
         strip.setPixelColor(i, BLACK)
 
-N_SNAKES = 10
-snakes = [Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=1+(0.3*i)) for i in xrange(N_SNAKES)]
+N_SNAKES = 15
+snakes = [Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES)]
 
 while True:
     strip.show()
     time.sleep(1.0 / 60)
-    print Color.hex_to_hsv(GREEN)
 
     strip_clear()
 
     for snake in snakes:
         snake.show()
         snake.step()
+
+    for i in xrange(NUMPIXELS):
+        if random.random() > 0.99:
+            strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.4, random.random()*10))
