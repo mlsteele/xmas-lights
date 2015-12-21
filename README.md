@@ -22,7 +22,7 @@ screen -dR lights
 cd xmas-lights
 make
 LIGHTFILE=miles.py
-echo $LIGHTFILE | entr -r sh -c "sudo pkill -U root -f 'python $LIGHTFILE' ; sudo python $LIGHTFILE"
+echo $LIGHTFILE | sudo entr -r sh -c "python $LIGHTFILE"
 ```
 
 Upload the file you're working on when changes occur.
