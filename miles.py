@@ -54,16 +54,18 @@ class Color(object):
 class Snake(object):
     def __init__(self, head=0, speed=1):
         self.head = int(head)
+        self.head_f = float(int(head))
         self.length = 10
-        self.speed = int(speed)
+        self.speed = speed
         self.hue_offset = head
 
     def step(self):
-        self.head = bound(self.head + self.speed)
+        self.head_f = bound(self.head_f + self.speed)
+        self.head = bound(int(self.head_f))
 
     def show(self):
         for i in xrange(self.length):
-            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * (i/float(self.length))
+            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * i / float(self.length)
             strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
             # strip.setPixelColor(self.head + i, Color.hsv_to_hex(0, 1, 30))
 
@@ -74,9 +76,14 @@ def strip_clear():
 N_SNAKES = 15
 snakes = [Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES)]
 
+last_frame_t = time.time()
+ideal_frame_delta_t = 1.0 / 60
 while True:
-    strip.show()
-    time.sleep(1.0 / 60)
+    frame_t = time.time()
+    delta_t = frame_t - last_frame_t
+    if delta_t < ideal_frame_delta_t:
+        time.sleep(ideal_frame_delta_t - delta_t)
+    last_frame_t = time.time()
 
     strip_clear()
 
@@ -85,5 +92,7 @@ while True:
         snake.step()
 
     for i in xrange(NUMPIXELS):
-        if random.random() > 0.99:
-            strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.4, random.random()*10))
+        if random.random() > 0.999:
+            strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()*30))
+
+    strip.show()
