@@ -77,6 +77,7 @@ class Nth(object):
 
     def step(self):
         self.offset += 1
+        self.offset %= self.skip
 
     def show(self):
         for i in xrange(self.num):
