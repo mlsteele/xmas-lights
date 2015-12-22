@@ -95,6 +95,7 @@ N_SNAKES = 15
 sprites = []
 sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES))
 sprites.append(EveryNth(factor=0.1))
+sprites.append(EveryNth(factor=0.1, speed=-0.2))
 sprites.append(Sparkle())
 
 last_frame_t = time.time()
