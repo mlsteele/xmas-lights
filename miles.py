@@ -91,6 +91,8 @@ N_SNAKES = 15
 snakes = [Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES)]
 nth = Nth(factor=0.1)
 
+sprites = snakes + [nth]
+
 last_frame_t = time.time()
 ideal_frame_delta_t = 1.0 / 60
 while True:
@@ -102,15 +104,12 @@ while True:
 
     strip_clear()
 
-    for snake in snakes:
-        snake.show()
-        snake.step()
+    for sprite in sprites:
+        sprite.show()
+        sprite.step()
 
     for i in xrange(NUMPIXELS):
         if random.random() > 0.999:
             strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()*30))
-
-    nth.step()
-    nth.show()
 
     strip.show()
