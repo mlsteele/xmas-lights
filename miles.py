@@ -60,7 +60,7 @@ class Snake(object):
             h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * i / float(self.length)
             strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
 
-class Nth(object):
+class EveryNth(object):
     def __init__(self, factor=0.02):
         self.num = int(NUMPIXELS * factor)
         self.skip = int(NUMPIXELS / self.num)
@@ -91,7 +91,7 @@ N_SNAKES = 15
 
 sprites = []
 sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES))
-sprites.append(Nth(factor=0.1))
+sprites.append(EveryNth(factor=0.1))
 sprites.append(Sparkle())
 
 last_frame_t = time.time()
