@@ -2,8 +2,22 @@
 
 Christmas tree lights for the Minsky/Steele house.
 
-Based of the lovely DotStar module for Python on a Raspberry Pi.
-[Adafruit_DotStar_Pi](https://github.com/adafruit/Adafruit_DotStar_Pi)
+## Dependencies
+
+APA-102c [LED control lib](https://github.com/tinue/APA102_Pi) thanks to Martin Erzberger. This is included, so nothing to do here.
+
+Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
+```shell
+sudo raspi-config
+```
+
+Install the python spidev library on the pi.
+```shell
+curl https://github.com/Gadgetoid/py-spidev/archive/master.zip >> py-spidev.zip
+unzip py-spidev.zip
+cd py-spidev-master
+sudo python setup.py install
+```
 
 ## Usage
 
@@ -21,13 +35,13 @@ ssh pi@xmas-pi
 screen -dR lights
 cd xmas-lights
 make
-LIGHTFILE=miles.py
+LIGHTFILE=lights.py
 echo $LIGHTFILE | sudo entr -r sh -c "python $LIGHTFILE"
+ls | grep py | entr -r sh -c "python $LIGHTSFILE"
 ```
 
 Upload the file you're working on when changes occur.
 
 ```shell
-LIGHTFILE=miles.py
-echo $LIGHTFILE | entr -r sh -c "scp $LIGHTFILE xmas-pi:xmas-lights/$LIGHTFILE"
+ls | grep py | entr -r sh -c "python lights.py"
 ```
