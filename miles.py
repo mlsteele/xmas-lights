@@ -61,18 +61,20 @@ class Snake(object):
             strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
 
 class EveryNth(object):
-    def __init__(self, factor=0.02):
+    def __init__(self, speed=1, factor=0.02):
         self.num = int(NUMPIXELS * factor)
         self.skip = int(NUMPIXELS / self.num)
+        self.speed = speed
         self.offset = 0
 
     def step(self):
-        self.offset += 1
+        self.offset += self.speed
         self.offset %= self.skip
 
     def show(self):
         for i in xrange(self.num):
-            strip.setPixelColor(self.offset + self.skip * i, Color.hsv_to_hex(0, 0, 10))
+            x = bound(int(self.offset + self.skip * i))
+            strip.setPixelColor(x, Color.hsv_to_hex(0, 0, 10))
 
 class Sparkle(object):
     def step(self):
