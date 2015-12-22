@@ -33,6 +33,7 @@ class Color(object):
 
     @staticmethod
     def rgb_to_hex(r, g, b):
+        r, g, b = (int(255 * c) for c in (r, g, b))
         return (r << 16) | (g << 8) | b
 
     @staticmethod
@@ -41,7 +42,7 @@ class Color(object):
 
     @staticmethod
     def hsv_to_hex(h, s, v):
-        return Color.rgb_to_hex(*map(int, colorsys.hsv_to_rgb(h, s, v)))
+        return Color.rgb_to_hex(*colorsys.hsv_to_rgb(h, s, v))
 
 class Snake(object):
     def __init__(self, head=0, speed=1):
@@ -57,8 +58,8 @@ class Snake(object):
 
     def show(self):
         for i in xrange(self.length):
-            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * i / float(self.length)
-            strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
+            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, i / float(self.length) / 2
+            strip.setPixelColor(bound(self.head + i), Color.hsv_to_hex(h, s, v))
 
 class EveryNth(object):
     def __init__(self, speed=1, factor=0.02):
@@ -74,7 +75,7 @@ class EveryNth(object):
     def show(self):
         for i in xrange(self.num):
             x = bound(int(self.offset + self.skip * i))
-            strip.setPixelColor(x, Color.hsv_to_hex(0, 0, 10))
+            strip.setPixelColor(x, Color.hsv_to_hex(0, 0, 1))
 
 class Sparkle(object):
     def step(self):
@@ -83,7 +84,7 @@ class Sparkle(object):
     def show(self):
         for i in xrange(NUMPIXELS):
             if random.random() > 0.999:
-                strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()*30))
+                strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()))
 
 def strip_clear():
     for i in xrange(NUMPIXELS):
