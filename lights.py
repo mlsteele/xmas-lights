@@ -167,10 +167,6 @@ class Predicate(object):
             if self.f(i):
                 strip.setPixelRGB(i, Color.hsv_to_hex(0, 0, 0.04))
 
-def strip_clear():
-    for i in xrange(NUMPIXELS):
-        strip.setPixelRGB(i, BLACK)
-
 N_SNAKES = 15
 
 sprites = []
@@ -198,13 +194,16 @@ try:
         #     print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        strip_clear()
+        with Profiler("clear"):
+            strip.clear()
 
-        for sprite in sprites:
-            sprite.show()
-            sprite.step()
+        with Profiler("sprites"):
+            for sprite in sprites:
+                sprite.show()
+                sprite.step()
 
-        strip.show()
+        with Profiler("show"):
+            strip.show()
 
 finally:
     strip.cleanup()

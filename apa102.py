@@ -95,17 +95,15 @@ class APA102:
             self.spi.xfer2([0x00])
 
     """
-    void clearStrip()
-    Sets the color for the entire strip to black, and immediately shows the result.
+    void clear()
+    Sets the strip color to black, does not show.
     """
-    def clearStrip(self):
-        # Clear the buffer
-        for led in range(self.numLEDs * 3): # 3 bytes per LED, for R, G and B
-            self.leds[led] = 0x00 # Set color to black.
-        # Clear the LED (no need to check the buffer, it's all black anyway)
-        self.clockStartFrame()
-        self.spi.xfer2([self.ledstart, 0x00, 0x00, 0x00] * self.numLEDs)
-        self.clockEndFrame() # ... and clock the end frame so that also the last LED(s) shut down.
+    def clear(self):
+        # Re-initialize the pixel buffer.
+        self.leds = []
+        for _ in range(self.numLEDs):
+            self.leds.extend([self.ledstart])
+            self.leds.extend([0x00] * 3)
 
     """
     void setPixel(ledNum, red, green, blue)
@@ -139,7 +137,8 @@ class APA102:
     def show(self):
         self.clockStartFrame()
         self.spi.xfer2(self.leds) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
-        self.clockEndFrame()
+        # Nah, don't do that.
+        # self.clockEndFrame()
 
     """
     void cleanup()
