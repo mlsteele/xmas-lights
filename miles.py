@@ -8,17 +8,17 @@ from dotstar import Adafruit_DotStar
 NUMPIXELS = 900 # Number of LEDs in strip
 
 # Here's how to control the strip from any two GPIO pins:
-datapin   = 23
-clockpin  = 24
-strip     = Adafruit_DotStar(NUMPIXELS, datapin, clockpin, order="bgr")
+datapin  = 23
+clockpin = 24
+strip    = Adafruit_DotStar(NUMPIXELS, datapin, clockpin, order="bgr")
 
-strip.begin()           # Initialize pins for output
+strip.begin()            # Initialize pins for output
 strip.setBrightness(255) # Limit brightness (out of 255)
 
-RED = 0xff0000
+RED   = 0xff0000
 GREEN = 0x00ff00
-BLUE = 0x0000ff
-BLACK = 0x000
+BLUE  = 0x0000ff
+BLACK = 0x000000
 WHITE = 0xffffff
 
 def bound(x):
