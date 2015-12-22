@@ -3,7 +3,7 @@ import apa102
 
 NUMPIXELS = 900 # Number of LEDs in strip
 
-strip = apa102.APA102(NUMPIXELS, )
+strip = apa102.APA102(NUMPIXELS)
 
 def main():
     for i in xrange(110, NUMPIXELS):
