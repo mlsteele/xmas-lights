@@ -83,15 +83,25 @@ class Nth(object):
         for i in xrange(self.num):
             strip.setPixelColor(self.offset + self.skip * i, Color.hsv_to_hex(0, 0, 10))
 
+class Sparkle(object):
+    def step(self):
+        pass
+
+    def show(self):
+        for i in xrange(NUMPIXELS):
+            if random.random() > 0.999:
+                strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()*30))
+
 def strip_clear():
     for i in xrange(NUMPIXELS):
         strip.setPixelColor(i, BLACK)
 
 N_SNAKES = 15
-snakes = [Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES)]
-nth = Nth(factor=0.1)
 
-sprites = snakes + [nth]
+sprites = []
+sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))*random.choice([1, -1])) for i in xrange(N_SNAKES))
+sprites.append(Nth(factor=0.1))
+sprites.append(Sparkle())
 
 last_frame_t = time.time()
 ideal_frame_delta_t = 1.0 / 60
@@ -107,9 +117,5 @@ while True:
     for sprite in sprites:
         sprite.show()
         sprite.step()
-
-    for i in xrange(NUMPIXELS):
-        if random.random() > 0.999:
-            strip.setPixelColor(i, Color.hsv_to_hex(random.random(), 0.3, random.random()*30))
 
     strip.show()
