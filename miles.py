@@ -1,19 +1,11 @@
 #!/usr/bin/python
 
-# Simple strand test for Adafruit Dot Star RGB LED strip.
-# This is a basic diagnostic tool, NOT a graphics demo...helps confirm
-# correct wiring and tests each pixel's ability to display red, green
-# and blue and to forward data down the line.  By limiting the number
-# and color of LEDs, it's reasonably safe to power a couple meters off
-# USB.  DON'T try that with other code!
-
 import time
 import colorsys
 import random
 from dotstar import Adafruit_DotStar
 
 NUMPIXELS = 900 # Number of LEDs in strip
-# We have 300 LEDs per strip.
 
 # Here's how to control the strip from any two GPIO pins:
 datapin   = 23
@@ -67,7 +59,6 @@ class Snake(object):
         for i in xrange(self.length):
             h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, 30 * i / float(self.length)
             strip.setPixelColor(self.head + i, Color.hsv_to_hex(h, s, v))
-            # strip.setPixelColor(self.head + i, Color.hsv_to_hex(0, 1, 30))
 
 class Nth(object):
     def __init__(self, factor=0.02):
