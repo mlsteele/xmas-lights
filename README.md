@@ -28,7 +28,7 @@ git clone https://github.com/mlsteele/xmas-lights
 cd xmas-lights
 ```
 
-Run the lights in a screen on the pi, restarting when a change is detected.
+Run the lights in a screen on the pi, restarting when a change is detected:
 
 ```shell
 ssh pi@xmas-pi
@@ -36,8 +36,6 @@ screen -dR lights
 ./xmas-lights/run
 ```
 
-Upload the file you're working on when changes occur.
+Upload the file you're working on when changes occur:
 
-```shell
-rsync -aiz --exclude .git . pi@xmas-pi:xmas-lights
-```
+    ./download
