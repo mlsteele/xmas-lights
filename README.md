@@ -2,57 +2,64 @@
 
 Christmas tree lights for the Minsky/Steele house.
 
-## Installation
-
-### Mac
+## Installation (Mac; for Mac-based development)
 
     brew install python entr
 
-### Raspberry Pi
+## Installation (Raspberry Pi)
 
 Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
+
 ```shell
 sudo raspi-config
 ```
 
-Install the python spidev library on the pi.
+Install the python spidev library:
 
 ```shell
-curl https://github.com/Gadgetoid/py-spidev/archive/master.zip >> py-spidev.zip
+curl https://github.com/Gadgetoid/py-spidev/archive/master.zip > py-spidev.zip
 unzip py-spidev.zip
-cd py-spidev-master
-sudo python setup.py install
+(cd py-spidev-master && sudo python setup.py install)
 ```
-
-Create a directory to hold the program. `./download` (below) will populate this.
 
 ```shell
-mkdir xmas-lights
+git clone https://github.com/mlsteele/xmas-lights
 ```
 
-## Usage
+## Usage (Raspberry Pi)
 
-Clone the repository on your computer and on the raspberry pi:
+```shell
+cd xmas-lights
+python lights.py
+```
+
+## Usage (Unix or Mac)
+
+Clone the repository on your computer:
 
 ```shell
 git clone https://github.com/mlsteele/xmas-lights
 cd xmas-lights
 ```
 
-Run the lights in a screen on the pi, restarting when a change is detected:
+Ssh into Pi and create a persistent connection with `screen` or `tmux`.
+Run the lights, reloading the file when it changes.
 
 ```shell
 ssh pi@xmas-pi
 screen -dR lights
-./xmas-lights/watch-upload.sh
+./xmas-lights/live-reload.sh
 ```
 
-Upload the file you're working on when changes occur:
+Leave this running in a terminal to download the files to the Pi when they change.
+The `./live-reload.sh` script on the Pi will restart the program.
 
 ```shell
-./download
+./live-download.sh
 ```
 
 ## Credits
 
-This includes Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
+This project includes the `apa102.py` file from Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
+
+That library and this code are available under Version 2 of the Gnu General Public License.
