@@ -2,9 +2,13 @@
 
 Christmas tree lights for the Minsky/Steele house.
 
-## Dependencies
+## Installation
 
-APA-102c [LED control lib](https://github.com/tinue/APA102_Pi) thanks to Martin Erzberger. This is included, so nothing to do here.
+### Mac
+
+    brew install python entr
+
+### Raspberry Pi
 
 Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
 ```shell
@@ -12,11 +16,18 @@ sudo raspi-config
 ```
 
 Install the python spidev library on the pi.
+
 ```shell
 curl https://github.com/Gadgetoid/py-spidev/archive/master.zip >> py-spidev.zip
 unzip py-spidev.zip
 cd py-spidev-master
 sudo python setup.py install
+```
+
+Create a directory to hold the program. `./download` (below) will populate this.
+
+```shell
+mkdir xmas-lights
 ```
 
 ## Usage
@@ -38,4 +49,10 @@ screen -dR lights
 
 Upload the file you're working on when changes occur:
 
-    ./download
+```shell
+./download
+```
+
+## Credits
+
+This includes Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
