@@ -33,14 +33,11 @@ Run the lights in a screen on the pi, restarting when a change is detected.
 ```shell
 ssh pi@xmas-pi
 screen -dR lights
-cd xmas-lights
-LIGHTFILE=lights.py
-echo $LIGHTFILE | sudo entr -r sh -c "python $LIGHTFILE"
-ls | grep py | entr -r sh -c "python $LIGHTSFILE"
+./xmas-lights/run
 ```
 
 Upload the file you're working on when changes occur.
 
 ```shell
-ls | grep py | entr -r sh -c "python lights.py"
+rsync -aiz --exclude .git . pi@xmas-pi:xmas-lights
 ```
