@@ -33,7 +33,10 @@ cd xmas-lights
 python lights.py
 ```
 
-## Usage (Unix or Mac)
+## Development
+
+You can use your edit sources on another computer, and set it to reload the changes sources on the Pi
+when they change.
 
 Clone the repository on your computer:
 
@@ -41,6 +44,12 @@ Clone the repository on your computer:
 git clone https://github.com/mlsteele/xmas-lights
 cd xmas-lights
 ```
+
+Find your Pi's IP address, and add an entry in your ``.ssh/config` on your development workstation:
+
+    Host 192.168.0.36
+      HostName xmas-pi
+      User pi
 
 Ssh into Pi and create a persistent connection with `screen` or `tmux`.
 Run the lights, reloading the file when it changes.
