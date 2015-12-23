@@ -44,7 +44,7 @@ Run the lights in a screen on the pi, restarting when a change is detected:
 ```shell
 ssh pi@xmas-pi
 screen -dR lights
-./xmas-lights/run
+./xmas-lights/watch-upload.sh
 ```
 
 Upload the file you're working on when changes occur:

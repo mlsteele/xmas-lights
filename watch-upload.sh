@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-FILENAME=miles.py
-echo $FILENAME | entr -r sh -c "scp $FILENAME xmas-pi:xmas-lights/$FILENAME"
+cd `dirname $0`
+find . -name \*.py | entr -r sh -c "python lights.py"
