@@ -60,6 +60,4 @@ The `./live-reload.sh` script on the Pi will restart the program.
 
 ## Credits
 
-This project includes the `apa102.py` file from Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
-
-That library and this code are available under Version 2 of the Gnu General Public License.
+`apa102.py` is adapted from Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
