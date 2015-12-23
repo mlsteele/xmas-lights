@@ -194,16 +194,13 @@ try:
         #     print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        with Profiler("clear"):
-            strip.clear()
+        strip.clear()
 
-        with Profiler("sprites"):
-            for sprite in sprites:
-                sprite.show()
-                sprite.step()
+        for sprite in sprites:
+            sprite.show()
+            sprite.step()
 
-        with Profiler("show"):
-            strip.show()
+        strip.show()
 
 finally:
     strip.cleanup()
