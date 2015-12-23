@@ -3,6 +3,7 @@
 import time
 import colorsys
 import random
+import signal
 from math import sin, cos
 import apa102
 
@@ -180,6 +181,12 @@ sprites.append(Sparkle())
 # angle_offset = lambda: sin(time.time()) * 55
 # angle_width = lambda: 10
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
+
+def handleSIGINT(signum, frame):
+    print 'received SIGINT; cleaning up', signum
+    strip.cleanup()
+
+signal.signal(signal.SIGINT, handleSIGINT)
 
 print "Starting."
 try:
