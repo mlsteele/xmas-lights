@@ -47,8 +47,8 @@ cd xmas-lights
 
 Find your Pi's IP address, and add an entry in your ``.ssh/config` on your development workstation:
 
-    Host 192.168.0.36
-      HostName xmas-pi
+    Host xmas-pi
+      HostName 192.168.0.36
       User pi
 
 Ssh into Pi and create a persistent connection with `screen` or `tmux`.
