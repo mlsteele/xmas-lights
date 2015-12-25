@@ -148,13 +148,34 @@ class Predicate(object):
             if self.f(i):
                 strip.addPixelHSV(i, 0, 0, 0.04)
 
-N_SNAKES = 15
-
 sprites = []
-sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
-sprites.append(EveryNth(factor=0.1))
-sprites.append(EveryNth(factor=0.1, speed=0.101))
-sprites.append(Sparkle())
+
+def scene1(sprites):
+    N_SNAKES = 15
+    sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+    sprites.append(EveryNth(factor=0.1))
+    sprites.append(Sparkle())
+
+def scene2(sprites):
+    N_SNAKES = 15
+    sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+
+def scene3(sprites):
+    sprites.append(EveryNth(factor=0.1))
+    sprites.append(EveryNth(factor=0.101))
+
+def scene4(sprites):
+    sprites.append(Sparkle())
+    sprites.append(Sparkle())
+
+SCENES = [scene1, scene2, scene3, scene4]
+FrameCount = 0
+
+def pickScene():
+    global sprites
+    scene = random.choice(SCENES)
+    sprites = []
+    scene(sprites)
 
 # Playing with angles.
 # angle_offset = lambda: time.time() * 45 % 360
@@ -173,6 +194,10 @@ try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
     while True:
+        FrameCount -= 1
+        if FrameCount <= 0:
+            pickScene()
+            FrameCount = 400 + random.randrange(400)
         frame_t = time.time()
         delta_t = frame_t - last_frame_t
         if delta_t < ideal_frame_delta_t:
