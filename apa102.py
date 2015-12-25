@@ -15,7 +15,6 @@ Public methods are:
 
 Helper methods for color manipulation are:
  - combineColor
- - wheel
 
 The rest of the methods are used internally and should not be used by the user of the library.
 
@@ -153,19 +152,3 @@ class APA102:
     """
     def combineColor(self, red, green, blue):
         return (red << 16) + (green << 8) + blue
-
-    """
-    color wheel(wheelPos)
-    Get a color from a color wheel
-    Green -> Red -> Blue -> Green
-    """
-    def wheel(self, wheelPos):
-        if wheelPos > 254: wheelPos = 254 # Safeguard
-        if wheelPos < 85: # Green -> Red
-            return self.combineColor(wheelPos * 3, 255 - wheelPos * 3, 0)
-        elif wheelPos < 170: # Red -> Blue
-            wheelPos -= 85
-            return self.combineColor(255 - wheelPos * 3, 0, wheelPos * 3)
-        else: # Blue -> Green
-            wheelPos -= 170
-            return self.combineColor(0, wheelPos * 3, 255 - wheelPos * 3);
