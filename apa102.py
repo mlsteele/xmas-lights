@@ -1,3 +1,4 @@
+import colorsys
 import spidev
 
 """
@@ -88,9 +89,9 @@ class APA102:
             return # again, invsible
         startIndex = 4 * ledNum
         self.leds[startIndex] = self.ledstart
-        self.leds[startIndex+3] = red
-        self.leds[startIndex+1] = green
-        self.leds[startIndex+2] = blue
+        self.leds[startIndex + 3] = red
+        self.leds[startIndex + 1] = green
+        self.leds[startIndex + 2] = blue
 
     """
     void setPixelRGB(ledNum,rgbColor)
@@ -99,6 +100,10 @@ class APA102:
     """
     def setPixelRGB(self, ledNum, rgbColor):
         self.setPixel(ledNum, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
+
+    def setPixelHSV(self, ledNum, h, s, v):
+        r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
+        self.setPixel(ledNum, r, g, b)
 
     """
     void show()

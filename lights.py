@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import time
-import colorsys
 import random
 import signal
 from math import sin, cos
@@ -94,26 +93,6 @@ class Profiler:
         self.interval = self.end - self.start
         print "profiled {}: {:.0f} (ms)".format(self.name, self.interval * 1000)
 
-class Color(object):
-    @staticmethod
-    def hex_to_rgb(hex_color):
-        return ((hex_color & 0xff0000) >> 16,
-            (hex_color & 0x00ff00) >> 8,
-            (hex_color & 0x0000ff))
-
-    @staticmethod
-    def rgb_to_hex(r, g, b):
-        r, g, b = (int(255 * c) for c in (r, g, b))
-        return (r << 16) | (g << 8) | b
-
-    @staticmethod
-    def hex_to_hsv(hex_color):
-        return colorsys.rgb_to_hsv(*Color.hex_to_rgb(hex_color))
-
-    @staticmethod
-    def hsv_to_hex(h, s, v):
-        return Color.rgb_to_hex(*colorsys.hsv_to_rgb(h, s, v))
-
 class Snake(object):
     def __init__(self, head=0, speed=1):
         self.head = int(head)
@@ -129,7 +108,7 @@ class Snake(object):
     def show(self):
         for i in xrange(self.length):
             h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, i / float(self.length) / 2
-            strip.setPixelRGB(bound(self.head + i), Color.hsv_to_hex(h, s, v))
+            strip.setPixelHSV(bound(self.head + i), h, s, v)
 
 class EveryNth(object):
     def __init__(self, speed=1, factor=0.02):
@@ -145,7 +124,7 @@ class EveryNth(object):
     def show(self):
         for i in xrange(self.num):
             x = bound(int(self.offset + self.skip * i))
-            strip.setPixelRGB(x, Color.hsv_to_hex(0, 0, 0.5))
+            strip.setPixelHSV(x, 0, 0, 0.5)
 
 class Sparkle(object):
     def step(self):
@@ -154,7 +133,7 @@ class Sparkle(object):
     def show(self):
         for i in xrange(NUMPIXELS):
             if random.random() > 0.999:
-                strip.setPixelRGB(i, Color.hsv_to_hex(random.random(), 0.3, random.random()))
+                strip.setPixelHSV(i, random.random(), 0.3, random.random())
 
 class Predicate(object):
     def __init__(self, predicate):
@@ -166,7 +145,7 @@ class Predicate(object):
     def show(self):
         for i in xrange(NUMPIXELS):
             if self.f(i):
-                strip.setPixelRGB(i, Color.hsv_to_hex(0, 0, 0.04))
+                strip.setPixelHSV(i, 0, 0, 0.04)
 
 N_SNAKES = 15
 
