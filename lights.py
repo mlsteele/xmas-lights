@@ -94,9 +94,10 @@ class Profiler:
         print "profiled {}: {:.0f} (ms)".format(self.name, self.interval * 1000)
 
 class Snake(object):
-    def __init__(self, head=0, speed=1):
+    def __init__(self, head=0, speed=1, brightness=0.5):
         self.head = int(head)
         self.head_f = float(int(head))
+        self.brightness = float(brightness)
         self.length = 10
         self.speed = speed
         self.hue_offset = head
@@ -107,8 +108,8 @@ class Snake(object):
 
     def show(self):
         for i in xrange(self.length):
-            h, s, v = ((self.hue_offset+self.head+i)/float(NUMPIXELS)*2.), 1, i / float(self.length) / 2
-            strip.setPixelHSV(bound(self.head + i), h, s, v)
+            h, s, v = 0.5 * (self.hue_offset+self.head+i) / NUMPIXELS, 1, self.brightness * i / self.length
+            strip.addPixelHSV(bound(self.head + i), h, s, v)
 
 class EveryNth(object):
     def __init__(self, speed=1, factor=0.02):
@@ -124,7 +125,7 @@ class EveryNth(object):
     def show(self):
         for i in xrange(self.num):
             x = bound(int(self.offset + self.skip * i))
-            strip.setPixelHSV(x, 0, 0, 0.5)
+            strip.addPixelHSV(x, 0, 0, 0.5)
 
 class Sparkle(object):
     def step(self):
@@ -133,7 +134,7 @@ class Sparkle(object):
     def show(self):
         for i in xrange(NUMPIXELS):
             if random.random() > 0.999:
-                strip.setPixelHSV(i, random.random(), 0.3, random.random())
+                strip.addPixelHSV(i, random.random(), 0.3, random.random())
 
 class Predicate(object):
     def __init__(self, predicate):
@@ -145,7 +146,7 @@ class Predicate(object):
     def show(self):
         for i in xrange(NUMPIXELS):
             if self.f(i):
-                strip.setPixelHSV(i, 0, 0, 0.04)
+                strip.addPixelHSV(i, 0, 0, 0.04)
 
 N_SNAKES = 15
 

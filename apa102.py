@@ -93,6 +93,14 @@ class APA102:
         self.leds[startIndex + 1] = green
         self.leds[startIndex + 2] = blue
 
+    def addPixel(self, ledNum, red, green, blue):
+        if not (0 <= ledNum < self.numLEDs): return
+        startIndex = 4 * ledNum
+        self.leds[startIndex] = self.ledstart
+        self.leds[startIndex + 3] = max(0, min(255, self.leds[startIndex + 3] + red))
+        self.leds[startIndex + 1] = max(0, min(255, self.leds[startIndex + 1] + green))
+        self.leds[startIndex + 2] = max(0, min(255, self.leds[startIndex + 2] + blue))
+
     """
     void setPixelRGB(ledNum,rgbColor)
     Sets the color of one pixel in the LED stripe. The changed pixel is not shown yet on the Stripe, it is only
@@ -101,9 +109,16 @@ class APA102:
     def setPixelRGB(self, ledNum, rgbColor):
         self.setPixel(ledNum, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
 
+    def addPixelRGB(self, ledNum, rgbColor):
+        self.setPixel(ledNum, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
+
     def setPixelHSV(self, ledNum, h, s, v):
         r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
         self.setPixel(ledNum, r, g, b)
+
+    def addPixelHSV(self, ledNum, h, s, v):
+        r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
+        self.addPixel(ledNum, r, g, b)
 
     """
     void show()
