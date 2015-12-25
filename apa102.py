@@ -13,9 +13,6 @@ Public methods are:
  - clearStrip
  - cleanup
 
-Helper methods for color manipulation are:
- - combineColor
-
 The rest of the methods are used internally and should not be used by the user of the library.
 
 Very brief overview of APA102: An APA102 LED is addressed with SPI. The bits are shifted in one by one,
@@ -118,10 +115,3 @@ class APA102:
     """
     def cleanup(self):
         self.spi.close()  # ... SPI Port schliessen
-
-    """
-    color combineColor(red,green,blue)
-    Make one 3*8 byte color value
-    """
-    def combineColor(self, red, green, blue):
-        return (red << 16) + (green << 8) + blue
