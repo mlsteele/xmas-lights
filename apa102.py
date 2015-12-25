@@ -53,53 +53,28 @@ class APA102:
     def __init__(self, numLEDs, globalBrightness = 31): # The number of LEDs in the Strip
         self.numLEDs = numLEDs
         # LED startframe is three "1" bits, followed by 5 brightness bits
-        self.ledstart = (globalBrightness & 0b00011111) | 0b11100000 # Don't validate, just slash of extra bits
-        self.leds = [] # Pixel buffer
-        for _ in range(self.numLEDs): # Allocate the entire buffer. If later some LEDs are not set,
-            self.leds.extend([self.ledstart]) # they will just be black,
-            self.leds.extend([0x00] * 3) #  instead of crashing the driver.
+        self.ledstart = (globalBrightness & 0b00011111) | 0b11100000 # Don't validate; just slash off extra bits
+        self.clear()
         self.spi = spidev.SpiDev()  # Init the SPI device
         self.spi.open(0, 1)  # Open SPI port 0, slave device (CS)  1
-        self.spi.max_speed_hz=8000000 # Up the speed a bit, so that the LEDs are painted faster
+        self.spi.max_speed_hz = 8000000 # Up the speed a bit, so that the LEDs are painted faster
 
     """
     void clockStartFrame()
     This method clocks out a start frame, telling the receiving LED that it must update its own color now.
     """
     def clockStartFrame(self):
-        _ = self.spi.xfer2([0x00, 0x00, 0x00, 0x00])  # Start frame, 32 zero bits
-
-    """
-    void clockEndFrame()
-    As explained above, dummy data must be sent after the last real color information so that all of the data
-    can reach its destination down the line.
-    The delay is not as bad as with the human example above. It is only 1/2 bit per LED. This is because the
-    SPI clock line needs to be inverted.
-
-    Say a bit is ready on the SPI data line. The sender communicates this by toggling the clock line. The bit
-    is read by the LED, and immediately forwarded to the output data line. When the clock goes down again
-    on the input side, the LED will toggle the clock up on the output to tell the next LED that the bit is ready.
-
-    After one LED the clock is inverted, and after two LEDs it is in sync again, but one cycle behind. Therefore,
-    for every two LEDs, one bit of delay gets accumulated. For 300 LEDs, 150 additional bits must be fed to
-    the input of LED one so that the data can reach the last LED.
-
-    Ultimately, we need to send additional numLEDs/2 arbitrary data bits, in order to trigger numLEDs/2 additional clock
-    changes. This driver sends zeroes, which has the benefit of getting LED one partially or fully ready for the next update
-    to the strip. An optimized version of the driver could omit the "clockStartFrame" method if enough zeroes have
-    been sent as part of "clockEndFrame".
-    """
-    def clockEndFrame(self):
-        for _ in range((self.numLEDs + 15) // 16):  # Round up numLEDs/2 bits (or numLEDs/16 bytes)
-            self.spi.xfer2([0x00])
+        self.spi.xfer2([0x00, 0x00, 0x00, 0x00])  # Start frame, 32 zero bits
 
     """
     void clear()
     Sets the strip color to black, does not show.
     """
     def clear(self):
-        # Re-initialize the pixel buffer.
+        # (Re-)initialize the pixel buffer.
         self.leds = []
+        # Allocate the entire buffer. If later some LEDs are not set, they will just be black, instead of crashing the
+        # driver.
         for _ in range(self.numLEDs):
             self.leds.extend([self.ledstart])
             self.leds.extend([0x00] * 3)
@@ -136,8 +111,6 @@ class APA102:
     def show(self):
         self.clockStartFrame()
         self.spi.xfer2(self.leds) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
-        # Nah, don't do that.
-        # self.clockEndFrame()
 
     """
     void cleanup()
