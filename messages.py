@@ -9,7 +9,8 @@ RABBIT_URL = os.environ.get('RABBIT_URL') or os.environ.get('CLOUDAMQP_URL')
 MESSAGE_QUEUE = 'lights'
 
 if RABBIT_URL:
-    parameters = pika.URLParameters(RABBIT_URL)
+    url = re.sub(r'(\/\/([^@]+@)[^:\/]+)\/', '\\1:5672/', RABBIT_URL)
+    parameters = pika.URLParameters(url)
 else:
     parameters = pika.ConnectionParameters(host='localhost')
 parameters.socket_timeout = 5
