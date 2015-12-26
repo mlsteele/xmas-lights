@@ -9,6 +9,12 @@ logging.getLogger('messages').setLevel(logging.INFO)
 IFTTT_TOKEN = os.environ.get('IFTTT_TOKEN')
 SLACK_WEBHOOK_TOKEN = os.environ.get('SLACK_WEBHOOK_TOKEN')
 
+SMS_TEXT_RE = r'^(on|off|\d+)$'
+
+if os.environ.get('TWILIO_ACCOUNT_SID'):
+    from twilio.rest import TwilioRestClient
+    twilio = TwilioRestClient(os.environ['TWILIO_ACCOUNT_SID'], os.environ['TWILIO_AUTH_TOKEN'])
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 
@@ -29,7 +35,15 @@ def slack():
         return abort(403)
     message = request.form['text']
     message = re.sub(r'[!@]\S+\s*', '', message)
-    messages.publish('action', action=message)
+    if re.match(SMS_TEXT_RE, message):
+        body = 'treelights' + message
+        twilio.messages.create(
+            from_ = os.environ['TWILIO_SMS_NUMBER'],
+            to    = os.environ['TWILIO_SMS_TARGET_NUMBER'],
+            body  = body,
+        )
+    else:
+        messages.publish('action', action=message)
     return flask.jsonify(text='ok')
 
 @app.route("/")
