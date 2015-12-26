@@ -14,12 +14,11 @@ Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
 sudo raspi-config
 ```
 
-Install the python spidev library:
+Install the python libraries:
 
 ```shell
-curl https://github.com/Gadgetoid/py-spidev/archive/master.zip > py-spidev.zip
-unzip py-spidev.zip
-(cd py-spidev-master && sudo python setup.py install)
+sudo apt-get install -y python-pip
+pip install -r requirements-pi.py
 ```
 
 ```shell
@@ -38,11 +37,12 @@ python lights.py
 You can use your edit sources on another computer, and set it to reload the changes sources on the Pi
 when they change.
 
-Clone the repository on your computer:
+Clone the repository on your computer, and install dependencies:
 
 ```shell
 git clone https://github.com/mlsteele/xmas-lights
 cd xmas-lights
+pip install -r requirements.txt
 ```
 
 Find your Pi's IP address, and add an entry in your ``.ssh/config` on your development workstation:
