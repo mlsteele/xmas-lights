@@ -17,9 +17,9 @@ connection = None
 try:
     connection = pika.BlockingConnection(parameters)
 except pika.exceptions.AMQPConnectionError as err:
-    print type(err).__name__ + ':', repr(err)
-    if RABBIT_URL:
-        exit(1)
+    print 'Error starting rabbit:', type(err).__name__ + ':', repr(err)
+except Exception as err:
+    print 'Error starting rabbit:', type(err).__name__ + ':', repr(err)
 
 if connection:
     channel = connection.channel()
