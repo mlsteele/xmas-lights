@@ -1,0 +1,14 @@
+{
+  "name": "Xmas-Lights",
+  "description": "Cloud support for XMas lights.",
+  "website": "http://xmas-lights.herokuapp.com",
+  "repository": "https://github.com/mlsteele/xmas-lights.git",
+  "success_url": "/welcome",
+  "addons": ["cloudamqp", "papertrail"],
+  "env": {
+    "IFTTT_TOKEN": {
+      "description": "A secret key for authenticating IFTTT Maker requests.",
+      "generator": "secret"
+    }
+  }
+}
