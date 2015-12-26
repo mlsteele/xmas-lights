@@ -1,8 +1,10 @@
-import re, os, sys
+import logging, os, re, sys
 import flask
 from flask import Flask, abort, request
 from flask import abort
+
 from messages import publish
+logging.getLogger('messages').setLevel(logging.INFO)
 
 IFTTT_TOKEN = os.environ.get('IFTTT_TOKEN')
 SLACK_WEBHOOK_TOKEN = os.environ.get('SLACK_WEBHOOK_TOKEN')
