@@ -276,6 +276,24 @@ def handleSIGINT(signum, frame):
     print 'received SIGINT; cleaning up', signum
     strip.cleanup()
 
+def handle_message():
+    message = get_message()
+    if message:
+        print message
+        action = message["action"]
+        # For now, any unlabeled messages trigger next scene.
+        if action == "next":
+            print "Advancing to next scene."
+            FrameCount = 0
+        elif label == "gamekey":
+            key, state = message.get("key"), message.get("state")
+            if key in gamekeys:
+                gamekeys[key] = bool(state)
+                print gamekeys
+        else:
+            print "unknown message:", label
+
+
 signal.signal(signal.SIGINT, handleSIGINT)
 
 print "Starting."
@@ -291,19 +309,7 @@ try:
         #     print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        message = get_message()
-        if message:
-            print message
-            label = message["label"]
-            # For now, any unlabeled messages trigger next scene.
-            if label == "default":
-                print "Advancing to next scene."
-                FrameCount = 0
-            elif label == "gamekey":
-                key, state = message.get("key"), message.get("state")
-                if key in gamekeys:
-                    gamekeys[key] = bool(state)
-                    print gamekeys
+        handle_message()
 
         FrameCount -= 1
         if FrameCount <= 0:

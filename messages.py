@@ -33,12 +33,12 @@ def get_message():
     if body:
         try:
             data = json.loads(body)
+            data["action"] = "gamekey"
             data["label"] = data.get("label", "default")
             return data
         except ValueError:
             return {
-                "label": "default",
-                "text": body,
+                "action": body,
             }
         return body
     else:
