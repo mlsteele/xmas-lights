@@ -1,7 +1,7 @@
 $(document).ready(function(){
   var socket = null;
   if (location.protocol == "https:") {
-    socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port + "/ctl");
+    socket = io.connect("wss://" + document.domain + ":" + location.port + "/ctl");
   } else {
     socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port + "/ctl", {secure: true});
   }
