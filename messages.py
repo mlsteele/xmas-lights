@@ -1,5 +1,6 @@
 import pika
 import re, os, sys
+import json
 import logging
 
 # logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
@@ -30,6 +31,15 @@ def get_message():
         return None
     (frame, props, body) = channel.basic_get(queue=XMAS_LIGHTS_QUEUE, no_ack=True)
     if body:
+        try:
+            data = json.loads(body)
+            data["label"] = data.get("label", "default")
+            return data
+        except ValueError:
+            return {
+                "label": "default",
+                "text": body,
+            }
         return body
     else:
         return None

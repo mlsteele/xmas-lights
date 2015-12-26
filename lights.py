@@ -11,6 +11,12 @@ NUMPIXELS = 900 # Number of LEDs in strip
 
 strip = apa102.APA102(NUMPIXELS)
 
+gamekeys = {
+    "left": False,
+    "right": False,
+    "fire": False,
+}
+
 RED   = 0xff0000
 GREEN = 0x00ff00
 BLUE  = 0x0000ff
@@ -207,6 +213,23 @@ class Predicate(object):
             if self.f(i):
                 strip.addPixelHSV(i, 0, 0, 0.04)
 
+class InteractiveWalk(object):
+    def __init__(self):
+        self.pos = 124
+        self.radius = 3
+
+    def step(self):
+        if gamekeys["left"]:
+            self.pos -= 1
+        if gamekeys["right"]:
+            self.pos += 1
+        self.pos = bound(self.pos)
+
+    def show(self):
+        for i in xrange(self.pos - self.radius, self.pos + self.radius):
+            i = bound(i)
+            strip.addPixelHSV(i, 0.3, 0.4, 0.2)
+
 sprites = []
 
 def scene1(sprites):
@@ -230,7 +253,11 @@ def scene4(sprites):
 def scene5(sprites):
     sprites.append(Tunnel())
 
-SCENES = [scene1, scene2, scene3, scene4, scene5]
+def scene6(sprites):
+    sprites.append(InteractiveWalk())
+
+# SCENES = [scene1, scene2, scene3, scene4, scene5]
+SCENES = [scene6]
 FrameCount = 0
 
 def pickScene():
@@ -267,7 +294,16 @@ try:
         message = get_message()
         if message:
             print message
-            FrameCount = 0
+            label = message["label"]
+            # For now, any unlabeled messages trigger next scene.
+            if label == "default":
+                print "Advancing to next scene."
+                FrameCount = 0
+            elif label == "gamekey":
+                key, state = message.get("key"), message.get("state")
+                if key in gamekeys:
+                    gamekeys[key] = bool(state)
+                    print gamekeys
 
         FrameCount -= 1
         if FrameCount <= 0:
