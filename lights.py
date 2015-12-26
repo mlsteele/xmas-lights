@@ -232,6 +232,9 @@ class InteractiveWalk(object):
 
 sprites = []
 
+def emptyScene(sprites):
+    pass
+
 def scene1(sprites):
     N_SNAKES = 15
     sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
@@ -253,18 +256,29 @@ def scene4(sprites):
 def scene5(sprites):
     sprites.append(Tunnel())
 
-def scene6(sprites):
+def walkScene(sprites):
     sprites.append(InteractiveWalk())
 
-SCENES = [scene1, scene2, scene3, scene4, scene5]
-# SCENES = [scene6]
+SceneSets = {
+    'empty'  : {emptyScene},
+    'attract': {scene1, scene2, scene3, scene4, scene5},
+    'walk'   : {walkScene},
+}
+
+CurrentSceneSet = SceneSets['attract']
+CurrentScene = None
 FrameCount = 0
 
 def pickScene():
     global sprites
-    scene = random.choice(SCENES)
+    global CurrentScene
+    scene = random.choice(list(CurrentSceneSet - {CurrentScene}))
+    CurrentScene = scene
     sprites = []
     scene(sprites)
+
+    global FrameCount
+    FrameCount = 400 + random.randrange(400)
 
 # Playing with angles.
 # angle_offset = lambda: time.time() * 45 % 360
@@ -277,6 +291,7 @@ def handleSIGINT(signum, frame):
     strip.cleanup()
 
 def handle_message():
+    global CurrentSceneSet, SceneSets
     message = get_message()
     if message:
         print message
@@ -284,14 +299,25 @@ def handle_message():
         # For now, any unlabeled messages trigger next scene.
         if action == "next":
             print "Advancing to next scene."
-            FrameCount = 0
-        elif label == "gamekey":
+            pickScene()
+        elif action == "toggle":
+            if CurrentSceneSet == SceneSets["empty"]:
+                print "toggle: on"
+                CurrentSceneSet = SceneSets["attract"]
+            else:
+                print "toggle: off"
+                CurrentSceneSet = SceneSets["empty"]
+            pickScene()
+        elif action == "gamekey":
             key, state = message.get("key"), message.get("state")
             if key in gamekeys:
                 gamekeys[key] = bool(state)
                 print gamekeys
+        elif SceneSets.get(action):
+            CurrentSceneSet = SceneSets[action]
+            pickScene()
         else:
-            print "unknown message:", label
+            print "unknown message:", action
 
 
 signal.signal(signal.SIGINT, handleSIGINT)
@@ -314,8 +340,6 @@ try:
         FrameCount -= 1
         if FrameCount <= 0:
             pickScene()
-            FrameCount = 400 + random.randrange(400)
-
         strip.clear()
 
         for sprite in sprites:
