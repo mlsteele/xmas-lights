@@ -113,11 +113,12 @@ class Snake(object):
             strip.addPixelHSV(bound(self.head + i), h, s, v)
 
 class EveryNth(object):
-    def __init__(self, speed=1, factor=0.02):
+    def __init__(self, speed=1, factor=0.02, v=0.5):
         self.num = int(NUMPIXELS * factor)
         self.skip = int(NUMPIXELS / self.num)
         self.speed = speed
         self.offset = 0
+        self.v = v
 
     def step(self):
         self.offset += self.speed
@@ -126,7 +127,7 @@ class EveryNth(object):
     def show(self):
         for i in xrange(self.num):
             x = bound(int(self.offset + self.skip * i))
-            strip.addPixelHSV(x, 0, 0, 0.5)
+            strip.addPixelHSV(x, 0, 0, self.v)
 
 class Sparkle(object):
     def step(self):
@@ -136,6 +137,43 @@ class Sparkle(object):
         for i in xrange(NUMPIXELS):
             if random.random() > 0.999:
                 strip.addPixelHSV(i, random.random(), 0.3, random.random())
+
+class SparkleFade(object):
+    def __init__(self, interval=0.01, max_age=.8, max_v=0.5):
+        """Sparkles that fade over time.
+
+        Args:
+            interval: How often a new spark appears.
+            max_age: Maximuma age of a sparkle in seconds.
+            max_v: Maximum brightness.
+        """
+        self.interval = float(interval)
+        self.max_age = float(max_age)
+        self.max_v = float(max_v)
+
+        # Map from index -> activation time
+        self.active = {}
+        self.last_appear = time.time()
+
+    def step(self):
+        intervals_passed = (time.time() - self.last_appear) / self.interval
+        for _ in xrange(int(min(intervals_passed, 10))):
+            # Create a new pixel.
+            self.last_appear = time.time()
+            i = random.randint(0, NUMPIXELS-1)
+            self.active[i] = time.time()
+
+        for i, activation_time in self.active.items():
+            age = time.time() - activation_time
+            if age > self.max_age:
+                del self.active[i]
+
+    def show(self):
+        for i, activation_time in self.active.iteritems():
+            age = time.time() - activation_time
+            v_factor = 1 - (age / self.max_age)
+            v = v_factor * self.max_v
+            strip.addPixelHSV(i, 0, 0.0, v)
 
 class Predicate(object):
     def __init__(self, predicate):
@@ -154,8 +192,8 @@ sprites = []
 def scene1(sprites):
     N_SNAKES = 15
     sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
-    sprites.append(EveryNth(factor=0.1))
-    sprites.append(Sparkle())
+    sprites.append(EveryNth(factor=0.1, v=0.3))
+    sprites.append(SparkleFade(interval=0.08))
 
 def scene2(sprites):
     N_SNAKES = 15
@@ -167,7 +205,7 @@ def scene3(sprites):
 
 def scene4(sprites):
     sprites.append(Sparkle())
-    sprites.append(Sparkle())
+    sprites.append(SparkleFade())
 
 SCENES = [scene1, scene2, scene3, scene4]
 FrameCount = 0
