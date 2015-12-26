@@ -1,13 +1,17 @@
-import os, re
+import re, os, sys
 import flask
 from flask import Flask, abort, request
 from flask import abort
 from messages import publish
 
-app = Flask(__name__)
-
 IFTTT_TOKEN = os.environ.get('IFTTT_TOKEN')
 SLACK_WEBHOOK_TOKEN = os.environ.get('SLACK_WEBHOOK_TOKEN')
+
+app = Flask(__name__)
+
+import logging
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.DEBUG)
 
 @app.route('/ifttt', methods=['POST'])
 def ifttt():
