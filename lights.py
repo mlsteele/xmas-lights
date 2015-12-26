@@ -259,9 +259,9 @@ def scene5(sprites):
 def gameScene(sprites):
     sprites.append(InteractiveWalk())
 
-EmptySceneSet = {emptyScene}
+EmptySceneSet   = {emptyScene}
 AttractSceneSet = {scene1, scene2, scene3, scene4, scene5}
-GameSceneSet = {gameScene}
+GameSceneSet    = {gameScene}
 
 SceneSets = {
     'empty'  : EmptySceneSet,
@@ -276,7 +276,10 @@ FrameCount = 0
 def pickScene():
     global sprites
     global CurrentScene
-    scene = random.choice(list(CurrentSceneSet - {CurrentScene}))
+    otherScenes = CurrentSceneSet - {CurrentScene}
+    if not otherScenes:
+        otherScenes = CurrentSceneSet
+    scene = random.choice(list(otherScenes))
     CurrentScene = scene
     sprites = []
     scene(sprites)
@@ -285,10 +288,11 @@ def pickScene():
     FrameCount = 400 + random.randrange(400)
 
 def selectSceneSet(sceneSet, switchMessage=None):
-    global CurrentSceneSet
+    global CurrentSceneSet, CurrentScene
     if CurrentSceneSet == sceneSet: return False
     print switchMessage
     CurrentSceneSet = sceneSet
+    CurrentScene = None
     pickScene()
     return True
 
