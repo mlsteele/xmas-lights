@@ -175,6 +175,26 @@ class SparkleFade(object):
             v = v_factor * self.max_v
             strip.addPixelHSV(i, 0, 0.0, v)
 
+class Tunnel(object):
+    def __init__(self):
+        self.front = 350
+        self.back = (self.front + 180) % 360
+        self.bandangle = 0
+        self.bandwidth = 15
+
+    def step(self):
+        self.bandangle += 4
+        self.bandangle %= 180
+
+        self.front += 1
+        self.front %= 360
+
+    def show(self):
+        for i in xrange(NUMPIXELS):
+            d = angdist(PixelAngle.angle(i), self.front)
+            if abs(d - self.bandangle) < self.bandwidth/2.:
+                strip.addPixelHSV(i, self.bandangle/90., 1, 0.2)
+
 class Predicate(object):
     def __init__(self, predicate):
         self.f = predicate
@@ -207,7 +227,10 @@ def scene4(sprites):
     sprites.append(Sparkle())
     sprites.append(SparkleFade())
 
-SCENES = [scene1, scene2, scene3, scene4]
+def scene5(sprites):
+    sprites.append(Tunnel())
+
+SCENES = [scene1, scene2, scene3, scene4, scene5]
 FrameCount = 0
 
 def pickScene():
