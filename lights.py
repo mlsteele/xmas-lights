@@ -5,6 +5,7 @@ import random
 import signal
 from math import sin, cos
 import apa102
+from messages import get_message
 
 NUMPIXELS = 900 # Number of LEDs in strip
 
@@ -194,10 +195,6 @@ try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
     while True:
-        FrameCount -= 1
-        if FrameCount <= 0:
-            pickScene()
-            FrameCount = 400 + random.randrange(400)
         frame_t = time.time()
         delta_t = frame_t - last_frame_t
         if delta_t < ideal_frame_delta_t:
@@ -205,6 +202,14 @@ try:
         # else:
         #     print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
+
+        message = get_message()
+        if message: print message
+
+        FrameCount -= 1
+        if FrameCount <= 0:
+            pickScene()
+            FrameCount = 400 + random.randrange(400)
 
         strip.clear()
 
