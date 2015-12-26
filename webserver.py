@@ -6,11 +6,14 @@ from messages import publish
 
 app = Flask(__name__)
 
+IFTTT_TOKEN = os.environ.get('IFTTT_TOKEN')
 SLACK_WEBHOOK_TOKEN = os.environ.get('SLACK_WEBHOOK_TOKEN')
 
 @app.route('/ifttt', methods=['POST'])
 def ifttt():
-    publish(request.form['event'])
+    if IFTTT_TOKEN and IFTTT_TOKEN != request.form['token']:
+        return abort(403)
+    publish(request.form['action'])
     return 'ok'
 
 @app.route('/slack', methods=['POST'])
