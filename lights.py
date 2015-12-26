@@ -329,8 +329,7 @@ def handle_message():
     if messageType == "action":
         handle_action(message)
     elif messageType == "gamekey":
-        if selectSceneSet(GameSceneSet):
-            print "game mode on"
+        selectSceneSet(GameSceneSet, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
             gamekeys[key] = bool(state)
