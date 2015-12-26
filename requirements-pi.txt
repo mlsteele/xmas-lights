@@ -1,2 +1,2 @@
-pika==0.9.13
-spidev==3.0
+pika>=0.9.13
+spidev>=3.0
