@@ -290,35 +290,41 @@ def handleSIGINT(signum, frame):
     print 'received SIGINT; cleaning up', signum
     strip.cleanup()
 
-def handle_message():
+def handle_action(message):
     global CurrentSceneSet, SceneSets
-    message = get_message()
-    if message:
-        print message
-        action = message["action"]
-        # For now, any unlabeled messages trigger next scene.
-        if action == "next":
-            print "Advancing to next scene."
-            pickScene()
-        elif action == "toggle":
-            if CurrentSceneSet == SceneSets["empty"]:
-                print "toggle: on"
-                CurrentSceneSet = SceneSets["attract"]
-            else:
-                print "toggle: off"
-                CurrentSceneSet = SceneSets["empty"]
-            pickScene()
-        elif action == "gamekey":
-            key, state = message.get("key"), message.get("state")
-            if key in gamekeys:
-                gamekeys[key] = bool(state)
-                print gamekeys
-        elif SceneSets.get(action):
-            CurrentSceneSet = SceneSets[action]
-            pickScene()
+    action = message["action"]
+    if action == "next":
+        print "Advancing to next scene."
+        pickScene()
+    elif action == "toggle":
+        if CurrentSceneSet == SceneSets["empty"]:
+            print "toggle: on"
+            CurrentSceneSet = SceneSets["attract"]
         else:
-            print "unknown message:", action
+            print "toggle: off"
+            CurrentSceneSet = SceneSets["empty"]
+        pickScene()
+    elif SceneSets.get(action):
+        CurrentSceneSet = SceneSets[action]
+        pickScene()
+    else:
+        print "unknown message:", action
 
+
+def handle_message():
+    message = get_message()
+    if not message: return
+    print message
+    messageType = message["type"]
+    if messageType == "action":
+        handle_action(message)
+    elif messageType == "gamekey":
+        key, state = message.get("key"), message.get("state")
+        if key in gamekeys:
+            gamekeys[key] = bool(state)
+            print gamekeys
+    else:
+        print "unknown message type:", messageType
 
 signal.signal(signal.SIGINT, handleSIGINT)
 

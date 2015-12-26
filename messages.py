@@ -6,7 +6,7 @@ import logging
 # logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
 
 RABBIT_URL = os.environ.get('RABBIT_URL') or os.environ.get('CLOUDAMQP_URL')
-XMAS_LIGHTS_QUEUE = 'lights'
+MESSAGE_QUEUE = 'lights'
 
 if RABBIT_URL:
     parameters = pika.URLParameters(RABBIT_URL)
@@ -23,20 +23,21 @@ except Exception as err:
 
 if connection:
     channel = connection.channel()
-    channel.queue_declare(queue=XMAS_LIGHTS_QUEUE, durable=True)
+    channel.queue_declare(queue=MESSAGE_QUEUE, durable=True)
 
 def get_message():
     if not connection:
         return None
-    (frame, props, body) = channel.basic_get(queue=XMAS_LIGHTS_QUEUE, no_ack=True)
+    (frame, props, body) = channel.basic_get(queue=MESSAGE_QUEUE, no_ack=True)
     if body:
         try:
             data = json.loads(body)
-            data["action"] = "gamekey"
+            data["type"] = "gamekey"
             data["label"] = data.get("label", "default")
             return data
         except ValueError:
             return {
+                "type": "action",
                 "action": body,
             }
         return body
