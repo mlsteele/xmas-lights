@@ -1,5 +1,11 @@
 $(document).ready(function(){
-  var socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port + "/ctl");
+  var socket = null;
+  if (location.protocol == "https:") {
+    socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port + "/ctl");
+  } else {
+    socket = io.connect(location.protocol + "//" + document.domain + ":" + location.port + "/ctl", {secure: true});
+  }
+
   socket.on("connect", function() {
     console.log("Socket connected.")
   });
