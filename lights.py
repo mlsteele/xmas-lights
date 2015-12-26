@@ -256,8 +256,8 @@ def scene5(sprites):
 def scene6(sprites):
     sprites.append(InteractiveWalk())
 
-# SCENES = [scene1, scene2, scene3, scene4, scene5]
-SCENES = [scene6]
+SCENES = [scene1, scene2, scene3, scene4, scene5]
+# SCENES = [scene6]
 FrameCount = 0
 
 def pickScene():
