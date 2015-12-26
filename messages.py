@@ -12,6 +12,7 @@ if RABBIT_URL:
     parameters = pika.URLParameters(RABBIT_URL)
 else:
     parameters = pika.ConnectionParameters(host='localhost')
+parameters.socket_timeout = 5
 
 connection = None
 try:
