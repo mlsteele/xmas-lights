@@ -7,6 +7,19 @@
     body, h1 {
       margin: 0;
       padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .pad-btn {
+      width: 50%;
+      height: 200px;
+      float: left;
+    }
+    .btn-left {
+      background: red;
+    }
+    .btn-right {
+      background: green;
     }
   </style>
   <script src="/static/jquery-2.1.4.min.js"></script>
@@ -15,6 +28,9 @@
 </head>
 
 <body>
-  test
+  <section class="control-pad">
+    <div class="pad-btn btn-left"></div>
+    <div class="pad-btn btn-right"></div>
+  </section>
 </body>
 </html>
