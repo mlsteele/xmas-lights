@@ -1,0 +1,5 @@
+# Raspberry Pi Python requirements.
+# Install via `pip -r pi-requirements.txt`
+
+pika>=0.9.13
+spidev>=3.0

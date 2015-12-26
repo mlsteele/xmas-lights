@@ -19,7 +19,7 @@ Install the python libraries:
 
 ```shell
 sudo apt-get install -y python-pip
-pip install -r requirements-pi.py
+pip install -r pi-requirements.txt
 ```
 
 ```shell
