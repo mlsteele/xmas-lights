@@ -4,22 +4,29 @@
   <meta charset="utf-8">
   <title>Controller</title>
   <style type="text/css">
-    body, h1 {
+    html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
     }
+    .control-pad {
+      width: 100%;
+      height: 100%;
+    }
     .pad-btn {
       width: 50%;
-      height: 500px;
+      height: 100%;
       float: left;
+      border-radius: 100%;
+      background: rgb(0,100,100);
+    }
+    .pad-btn:active {
+      background: rgb(0,150,100);
     }
     .btn-left {
-      background: red;
     }
     .btn-right {
-      background: green;
     }
   </style>
   <script src="/static/jquery-2.1.4.min.js"></script>

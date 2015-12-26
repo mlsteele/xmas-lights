@@ -3,6 +3,9 @@ from flask import Flask, request, send_from_directory
 from flask.ext.socketio import SocketIO, emit
 import messages
 
+import logging
+logging.getLogger('messages').setLevel(logging.INFO)
+
 app = Flask(__name__)
 socketio = SocketIO(app)
 
