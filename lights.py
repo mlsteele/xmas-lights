@@ -265,7 +265,9 @@ try:
         last_frame_t = time.time()
 
         message = get_message()
-        if message: print message
+        if message:
+            print message
+            FrameCount = 0
 
         FrameCount -= 1
         if FrameCount <= 0:
