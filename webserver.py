@@ -6,9 +6,6 @@ from flask.ext.socketio import SocketIO, emit
 import messages
 logging.getLogger('messages').setLevel(logging.INFO)
 
-IFTTT_TOKEN = os.environ.get('IFTTT_TOKEN')
-SLACK_WEBHOOK_TOKEN = os.environ.get('SLACK_WEBHOOK_TOKEN')
-
 SMS_TEXT_RE = r'^(on|off|\d+)$'
 
 if os.environ.get('TWILIO_ACCOUNT_SID'):
@@ -22,17 +19,26 @@ import logging
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
 
+def validate_token(token):
+    def validate_token_decorator(func):
+        def func_wrapper(*args, **kwargs):
+            if token != request.form['token']:
+                return abort(403)
+            return func(*args, **kwargs)
+        return (func_wrapper if token else func)
+    return validate_token_decorator
+
+# Web hooks
+
 @app.route('/ifttt', methods=['POST'])
+@validate_token(os.environ.get('IFTTT_TOKEN'))
 def ifttt():
-    if IFTTT_TOKEN and IFTTT_TOKEN != request.form['token']:
-        return abort(403)
     messages.publish('action', action=request.form['action'])
     return 'ok'
 
 @app.route('/slack', methods=['POST'])
+@validate_token(os.environ.get('SLACK_WEBHOOK_TOKEN'))
 def slack():
-    if SLACK_WEBHOOK_TOKEN and SLACK_WEBHOOK_TOKEN != request.form['token']:
-        return abort(403)
     message = request.form['text']
     message = re.sub(r'[!@]\S+\s*', '', message)
     if re.match(SMS_TEXT_RE, message):
@@ -45,6 +51,8 @@ def slack():
     else:
         messages.publish('action', action=message)
     return flask.jsonify(text='ok')
+
+# Game server
 
 @app.route("/")
 def index():
