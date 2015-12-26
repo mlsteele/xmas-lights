@@ -256,13 +256,17 @@ def scene4(sprites):
 def scene5(sprites):
     sprites.append(Tunnel())
 
-def walkScene(sprites):
+def gameScene(sprites):
     sprites.append(InteractiveWalk())
 
+EmptySceneSet = {emptyScene}
+AttractSceneSet = {scene1, scene2, scene3, scene4, scene5}
+GameSceneSet = {gameScene}
+
 SceneSets = {
-    'empty'  : {emptyScene},
-    'attract': {scene1, scene2, scene3, scene4, scene5},
-    'walk'   : {walkScene},
+    'empty'  : EmptySceneSet,
+    'attract': AttractSceneSet,
+    'game'   : GameSceneSet,
 }
 
 CurrentSceneSet = SceneSets['attract']
@@ -279,6 +283,14 @@ def pickScene():
 
     global FrameCount
     FrameCount = 400 + random.randrange(400)
+
+def selectSceneSet(sceneSet, switchMessage=None):
+    global CurrentSceneSet
+    if CurrentSceneSet == sceneSet: return False
+    print switchMessage
+    CurrentSceneSet = sceneSet
+    pickScene()
+    return True
 
 # Playing with angles.
 # angle_offset = lambda: time.time() * 45 % 360
@@ -297,19 +309,13 @@ def handle_action(message):
         print "Advancing to next scene."
         pickScene()
     elif action == "toggle":
-        if CurrentSceneSet == SceneSets["empty"]:
-            print "toggle: on"
-            CurrentSceneSet = SceneSets["attract"]
-        else:
-            print "toggle: off"
-            CurrentSceneSet = SceneSets["empty"]
+        if not selectSceneSet(EmptySceneSet, "toggle: off"):
+            selectSceneSet(AttractSceneSet, "toggle: on")
         pickScene()
     elif SceneSets.get(action):
-        CurrentSceneSet = SceneSets[action]
-        pickScene()
+        selectSceneSet(SceneSets[action])
     else:
         print "unknown message:", action
-
 
 def handle_message():
     message = get_message()
@@ -319,6 +325,8 @@ def handle_message():
     if messageType == "action":
         handle_action(message)
     elif messageType == "gamekey":
+        if selectSceneSet(GameSceneSet):
+            print "game mode on"
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
             gamekeys[key] = bool(state)
