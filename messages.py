@@ -26,36 +26,25 @@ if connection:
     channel.queue_declare(queue=MESSAGE_QUEUE, durable=True)
 
 def get_message():
-    if not connection:
-        return None
+    if not connection: return None
     (frame, props, body) = channel.basic_get(queue=MESSAGE_QUEUE, no_ack=True)
-    if body:
-        try:
-            data = json.loads(body)
-            data["type"] = "gamekey"
-            data["label"] = data.get("label", "default")
-            return data
-        except ValueError:
-            return {
-                "type": "action",
-                "action": body,
-            }
-        return body
-    else:
-        return None
+    if not frame: return None
+    return json.loads(body)
 
-def publish(body):
+def publish(messageType, **payload):
+    payload['type'] = messageType
     channel.basic_publish(
-        exchange='',
-        routing_key='lights',
-        body=body,
-        properties=pika.BasicProperties(delivery_mode=2) # persistent
+        exchange    = '',
+        routing_key = 'lights',
+        body        = json.dumps(payload),
+        properties  = pika.BasicProperties(delivery_mode=2) # persistent
       )
 
 if __name__ == '__main__':
+    # publish a message
     if len(sys.argv) > 1:
         print sys.argv[1]
-        publish(sys.argv[1])
+        publish("action", action=sys.argv[1])
         connection.close()
     else:
         while True:

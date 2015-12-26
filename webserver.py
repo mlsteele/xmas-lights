@@ -17,7 +17,7 @@ app.logger.setLevel(logging.DEBUG)
 def ifttt():
     if IFTTT_TOKEN and IFTTT_TOKEN != request.form['token']:
         return abort(403)
-    publish(request.form['action'])
+    publish('action', action=request.form['action'])
     return 'ok'
 
 @app.route('/slack', methods=['POST'])
@@ -26,7 +26,7 @@ def slack():
         return abort(403)
     message = request.form['text']
     message = re.sub(r'[!@]\S+\s*', '', message)
-    publish(message)
+    publish('action', action=message)
     return flask.jsonify(text='ok')
 
 if __name__ == '__main__':

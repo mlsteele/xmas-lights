@@ -1,5 +1,4 @@
 import sys
-import json
 from flask import Flask, request, send_from_directory
 from flask.ext.socketio import SocketIO, emit
 import messages
@@ -18,12 +17,11 @@ def index():
 @socketio.on("ctl", namespace="/ctl")
 def ctl_message(message):
     payload = {
-        "label": "gamekey",
         "key": message.get("key"),
         "state": bool(message.get("state")),
     }
     print payload
-    messages.publish(json.dumps(payload))
+    messages.publish("gamekey", **payload)
 
 if __name__ == "__main__":
     socketio.run(app, use_reloader=True)
