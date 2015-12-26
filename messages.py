@@ -9,8 +9,7 @@ RABBIT_URL = os.environ.get('RABBIT_URL') or os.environ.get('CLOUDAMQP_URL')
 XMAS_LIGHTS_QUEUE = 'lights'
 
 if RABBIT_URL:
-    url = re.sub(r'(\/\/([^@]+@)[^:\/]+)\/', '\\1:5672/', RABBIT_URL)
-    parameters = pika.URLParameters(url)
+    parameters = pika.URLParameters(RABBIT_URL)
 else:
     parameters = pika.ConnectionParameters(host='localhost')
 
