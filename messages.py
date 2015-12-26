@@ -2,7 +2,7 @@ import pika
 import re, os, sys
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
+# logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.CRITICAL)
 
 RABBIT_URL = os.environ.get('RABBIT_URL') or os.environ.get('CLOUDAMQP_URL')
 XMAS_LIGHTS_QUEUE = 'lights'
