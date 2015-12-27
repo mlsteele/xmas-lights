@@ -57,7 +57,8 @@ For development, you can set up the Pi to restart the application whenever its s
 
 Do this once:
 
-    apt-get install entr
+    curl http://entrproject.org/code/entr-3.4.tar.gz | tar xz
+    cd eradman-entr-* && ./configure && sudo make install
 
 and run the lights thus:
 
