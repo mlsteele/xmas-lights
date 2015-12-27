@@ -1,73 +1,143 @@
 # Xmas Tree Lights
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
-
 Christmas tree lights for the Minsky/Steele house.
 
-## Installation (Mac; for Mac-based development)
+A Python program that runs on a Raspberry Pi and animates the lights on an APA102 (Dotstar) LED strip.
 
-    brew install python entr
+This README is divided into three sections:
 
-## Installation (Raspberry Pi)
+* Installing and running the program on the Raspberry Pi.
+* Optional: Configuring the Pi and another workstation for streamlined development with automatic reloading.
+* Optional: Configuring a WebServer for remote control of the lights via IFTTT, Slack, or Twilio.
+
+## Raspberry Pi
+
+### Installation
 
 Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
 
-```shell
-sudo raspi-config
-```
+    sudo raspi-config
 
-Install the python libraries:
+Clone the repo:
 
-```shell
-sudo apt-get install -y python-pip
-pip install -r pi-requirements.txt
-```
+    git clone https://github.com/mlsteele/xmas-lights
+    cd xmas-lights
 
-```shell
-git clone https://github.com/mlsteele/xmas-lights
-```
+Install the required dependencies:
 
-## Usage (Raspberry Pi)
+    sudo apt-get install -y python-pip
+    pip install -r pi-requirements.txt
 
-```shell
-cd xmas-lights
-python lights.py
-```
+### Running
 
-## Development
+To run the lights:
 
-You can use your edit sources on another computer, and set it to reload the changes sources on the Pi
-when they change.
+    python lights.py
 
-Clone the repository on your computer, and install dependencies:
+To run the lights whenever the Pi boots, use `sudo nano /etc/rc.local` or another editor to add this line to
+``/etc/rc.local`.
 
-```shell
-git clone https://github.com/mlsteele/xmas-lights
-cd xmas-lights
-pip install -r requirements.txt
-```
+Note that this will swallow error messages. If things aren't working, debug it running it
+from the terminal as above.
 
-Find your Pi's IP address, and add an entry in your ``.ssh/config` on your development workstation:
+    sudo python lights.py > /dev/null 2>&1 &
+
+(If you change the `/etc/rc.local` line to log to a file: beware of filling up your file system,
+and be aware that continuously writing to an SD card increases the likelihood that it will be corrupted if
+power to the Pi is cut while the Pi is running.)
+
+## Live-Reload Development Flow
+
+For development, you can set up the Pi to restart the application whenever its sources change.
+
+Do this once:
+
+    apt-get install entr
+
+and run the lights thus:
+
+    ./live-reload.sh
+
+Now when you edit a `*.py` file, the program will reload.
+
+## Live-Download Development Flow
+
+If you prefer to edit on a separate development workstation, you can configure it to download files
+to the Pi when they change on the development workstation. In conjunction with the Live-Reload flow, above,
+this has the effect that when you save a file from the editor on your workstation, the application on the Pi
+will shortly re-run with the changes.
+
+### Installation (Development Station)
+
+On the development station, download the repo:
+
+    git clone https://github.com/mlsteele/xmas-lights
+    cd xmas-lights
+
+Run one of the following:
+
+    apt-get install -y entr       # Linux
+    brew install ssh-copy-id entr # Mac OS
+
+[Find your Pi's IP address](https://www.raspberrypi.org/documentation/troubleshooting/hardware/networking/ip-address.md),
+and add an entry in your ``.ssh/config` on your development workstation.
+For example, if your Pi's IP address is `192.168.0.36`, add the following.
 
     Host xmas-pi
       HostName 192.168.0.36
       User pi
 
-Ssh into Pi and create a persistent connection with `screen` or `tmux`.
-Run the lights, reloading the file when it changes.
+[Configure your Pi for passwordless login](https://www.raspberrypi.org/documentation/remote-access/ssh/passwordless.md):
 
-```shell
-ssh pi@xmas-pi
-screen -dR lights
-./xmas-lights/live-reload.sh
-```
+    [ -f ~/.ssh/id_rsa.pub] || ssh-keygen -t rsa
+    ssh-copy-id -i ~/.ssh/id_rsa.pub pi@xmas-pi
 
-Leave this running in a terminal to download the files to the Pi when they change.
-The `./live-reload.sh` script on the Pi will restart the program.
+### Running
 
-```shell
-./live-download.sh
-```
+Run `./live-reload.sh` on the Pi. Use the first line below to simply run it:
+
+    ssh pi@xmas-pi xmas-lights/live-reload.sh
+
+Or, use this block to create a [screen](https://www.gnu.org/software/screen/) session that will remain running if you
+lose the connection to the Pi, and that you can attach to again using the same command:
+
+    ssh pi@xmas-pi -t screen -dR lights
+    xmas-lights/live-reload.sh
+
+Run this on the development station:
+
+    ./live-download.sh
+
+## Server
+
+### Configuration
+
+The server and the Pi communicate using RabbitMQ.
+Provision a RabbitMQ host, and retrieve its URI.
+The URI should look something like this: `amqp://user:pass@host:10000/vhost`.
+
+Edit the RabbitMQ URI into the Raspberry Pi's `/etc/environment` file, via `sudo nano /etc/environment` or
+another editor. Remember to replace the example URI below by your Rabbit's URI.
+
+    RABBIT_URL=amqp://user:pass@host:10000/vhost
+
+### Local Development
+
+Run one of the following:
+    apt-get install -y entr python-pip # Linux
+    brew install entr python           # Mac OS
+
+Inside the `xmas-lights` directory:
+
+    pip install -r requirements.txt # once
+    python webserver.py
+
+### Deployment [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
+The simplest way to deploy the app is to create a Heroku application, add a RabbitMQ add-on, and push
+this repository to the application.
 
 ## Credits
 
 `apa102.py` is adapted from Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
+
+An earlier version used the Adafruit_DotStar_Pi library. Erzberger's library is both pure Python and faster.
