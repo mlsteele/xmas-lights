@@ -1,5 +1,9 @@
 import colorsys
-import spidev
+try:
+    import spidev
+except ImportError:
+    print "spidev not found; using simulator"
+    import spidev_sim as spidev
 
 """
 Driver for APA102 LEDS (aka "DotStar").
