@@ -259,26 +259,26 @@ def scene5(sprites):
 def gameScene(sprites):
     sprites.append(InteractiveWalk())
 
-EmptySceneSet   = {emptyScene}
-AttractSceneSet = {scene1, scene2, scene3, scene4, scene5}
-GameSceneSet    = {gameScene}
+EmptyMode   = {emptyScene}
+AttractMode = {scene1, scene2, scene3, scene4, scene5}
+GameMode    = {gameScene}
 
-SceneSets = {
-    'empty'  : EmptySceneSet,
-    'attract': AttractSceneSet,
-    'game'   : GameSceneSet,
+Modes = {
+    'empty'  : EmptyMode,
+    'attract': AttractMode,
+    'game'   : GameMode,
 }
 
-CurrentSceneSet = SceneSets['attract']
+CurrentMode = Modes['attract']
 CurrentScene = None
 FrameCount = 0
 
 def pickScene():
     global sprites
     global CurrentScene
-    otherScenes = CurrentSceneSet - {CurrentScene}
+    otherScenes = CurrentMode - {CurrentScene}
     if not otherScenes:
-        otherScenes = CurrentSceneSet
+        otherScenes = CurrentMode
     scene = random.choice(list(otherScenes))
     CurrentScene = scene
     sprites = []
@@ -287,11 +287,11 @@ def pickScene():
     global FrameCount
     FrameCount = 400 + random.randrange(400)
 
-def selectSceneSet(sceneSet, switchMessage=None):
-    global CurrentSceneSet, CurrentScene
-    if CurrentSceneSet == sceneSet: return False
+def selectMode(sceneSet, switchMessage=None):
+    global CurrentMode, CurrentScene
+    if CurrentMode == sceneSet: return False
     print switchMessage
-    CurrentSceneSet = sceneSet
+    CurrentMode = sceneSet
     CurrentScene = None
     pickScene()
     return True
@@ -307,17 +307,17 @@ def handleSIGINT(signum, frame):
     strip.cleanup()
 
 def handle_action(message):
-    global CurrentSceneSet, SceneSets
+    global CurrentMode, Modes
     action = message["action"]
     if action == "next":
         print "Advancing to next scene."
         pickScene()
     elif action == "toggle":
-        if not selectSceneSet(EmptySceneSet, "toggle: off"):
-            selectSceneSet(AttractSceneSet, "toggle: on")
+        if not selectMode(EmptyMode, "toggle: off"):
+            selectMode(AttractMode, "toggle: on")
         pickScene()
-    elif SceneSets.get(action):
-        selectSceneSet(SceneSets[action])
+    elif Modes.get(action):
+        selectMode(Modes[action])
     else:
         print "unknown message:", action
 
@@ -329,7 +329,7 @@ def handle_message():
     if messageType == "action":
         handle_action(message)
     elif messageType == "gamekey":
-        selectSceneSet(GameSceneSet, "game mode on")
+        selectMode(GameMode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
             gamekeys[key] = bool(state)
