@@ -1,5 +1,11 @@
 # Xmas Tree Lights
+
 Christmas tree lights for the Minsky/Steele house.
+
+![](http://assets.osteele.com.s3.amazonaws.com/images/2015/xmas-lights/lights.gif)
+![](http://assets.osteele.com.s3.amazonaws.com/images/2015/xmas-lights/sparkle.gif)
+![](http://assets.osteele.com.s3.amazonaws.com/images/2015/xmas-lights/nth.gif)
+![](http://assets.osteele.com.s3.amazonaws.com/images/2015/xmas-lights/other.gif)
 
 A Python program that runs on a Raspberry Pi and animates the lights on an APA102 (Dotstar) LED strip.
 
