@@ -139,23 +139,36 @@ class Tunnel(Scene):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
-class Falls(Scene):
+class Drops(Scene):
     def __init__(self):
-        self.front = 360 * random.random()
-        self.bandwidth = 15
+        self.angle = 360 * random.random()
         self.phase = 0
         self.hue = random.random()
+        self.phase = random.random()
 
     def step(self):
-        self.phase += 0.1
+        self.phase += 0.2
+        if self.phase > 2 + random.random():
+            self.phase = -random.random()
+            self.angle = 360 * random.random()
+            self.hue = random.random()
 
     def show(self):
+        a0 = None
+        da0 = None
         for pixel in Pixels.iter():
-            d = pixel.angle_from(self.front)
-            if abs(d) < self.bandwidth/2.:
-                r = 1 - (pixel.index / float(Pixels.count))
-                b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase) * cos(d / self.bandwidth * 2 * pi)
-                strip.addPixelHSV(pixel.index, self.hue, 0.5, b)
+            a = pixel.angle_from(self.angle)
+            if a0 is not None:
+                da = a - a0
+                if da0 is not None and da0 <= 0 and da >= 0:
+                    r = pixel.radius
+                    b = abs(r - self.phase)
+                    if b < 1:
+                        b = (1 - b) ** 2
+                        # b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase)
+                        strip.addPixelHSV(pixel.index, self.hue, 0.5, b)
+                da0 = da
+            a0 = a
 
 class Predicate(Scene):
     def __init__(self, predicate):
@@ -209,14 +222,14 @@ def sparkle_scene(sprites):
 def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
-def falls_scene(sprites):
-    sprites.extend(Falls() for _ in xrange(10))
+def drops_scene(sprites):
+    sprites.extend(Drops() for _ in xrange(15))
 
 def game_scene(sprites):
     sprites.append(InteractiveWalk())
 
 EmptyMode   = {empty_scene}
-AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
+AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene, drops_scene}
 GameMode    = {game_scene}
 
 Modes = {

@@ -14,6 +14,10 @@ class Pixel(object):
     def angle(self):
         return PixelAngle.angle(self.index)
 
+    @property
+    def radius(self):
+        return Pixels.radius(self.index)
+
     def angle_from(self, angle):
         d = abs(self.angle - angle)
         return min(d % 360, -d % 360)
