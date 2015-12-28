@@ -273,12 +273,14 @@ CurrentMode = Modes['attract']
 CurrentScene = None
 FrameCount = 0
 
-def pickScene():
+def select_another_scene():
     global sprites
     global CurrentScene
+    # choose a different scene than the current one
     otherScenes = CurrentMode - {CurrentScene}
+    # if the mode has only one scene, don't change it
     if not otherScenes:
-        otherScenes = CurrentMode
+        return
     scene = random.choice(list(otherScenes))
     print 'selecting', scene.__name__
     CurrentScene = scene
@@ -288,13 +290,13 @@ def pickScene():
     global FrameCount
     FrameCount = 400 + random.randrange(400)
 
-def selectMode(sceneSet, switchMessage=None):
+def select_mode(sceneSet, switchMessage=None):
     global CurrentMode, CurrentScene
     if CurrentMode == sceneSet: return False
     print switchMessage
     CurrentMode = sceneSet
     CurrentScene = None
-    pickScene()
+    select_another_scene()
     return True
 
 # Playing with angles.
@@ -308,13 +310,13 @@ def handle_action(message):
     action = message["action"]
     if action == "next":
         print "Advancing to next scene."
-        pickScene()
+        select_another_scene()
     elif action == "toggle":
-        if not selectMode(EmptyMode, "toggle: off"):
-            selectMode(AttractMode, "toggle: on")
-        pickScene()
+        if not select_mode(EmptyMode, "toggle: off"):
+            select_mode(AttractMode, "toggle: on")
+        select_another_scene()
     elif Modes.get(action):
-        selectMode(Modes[action])
+        select_mode(Modes[action])
     else:
         print "unknown message:", action
 
@@ -326,7 +328,7 @@ def handle_message():
     if messageType == "action":
         handle_action(message)
     elif messageType == "gamekey":
-        selectMode(GameMode, "game mode on")
+        select_mode(GameMode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
             gamekeys[key] = bool(state)
@@ -351,7 +353,7 @@ try:
 
         FrameCount -= 1
         if FrameCount <= 0:
-            pickScene()
+            select_another_scene()
         strip.clear()
 
         for sprite in sprites:
