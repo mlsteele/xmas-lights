@@ -6,7 +6,7 @@ import signal
 from math import sin, cos, pi
 import apa102
 from messages import get_message
-from light_geometry import PixelAngle, Pixels
+from led_geometry import PixelAngle, Pixels
 
 strip = apa102.APA102(Pixels.count)
 

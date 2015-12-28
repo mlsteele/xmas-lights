@@ -1,6 +1,6 @@
 import sys, pygame
 from math import sin, cos, pi
-from light_geometry import Pixels
+from led_geometry import Pixels
 
 class SpiDev:
     def open(self, port, slave):
