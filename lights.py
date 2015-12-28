@@ -100,7 +100,14 @@ class Profiler:
         self.interval = self.end - self.start
         print "profiled {}: {:.0f} (ms)".format(self.name, self.interval * 1000)
 
-class Snake(object):
+class Scene(object):
+    def step(self):
+        pass
+
+    def show(self):
+        raise NotImplementedError
+
+class Snake(Scene):
     def __init__(self, head=0, speed=1, brightness=0.5):
         self.head = int(head)
         self.head_f = float(int(head))
@@ -118,7 +125,7 @@ class Snake(object):
             h, s, v = 0.5 * (self.hue_offset+self.head+i) / NUMPIXELS, 1, self.brightness * i / self.length
             strip.addPixelHSV(bound(self.head + i), h, s, v)
 
-class EveryNth(object):
+class EveryNth(Scene):
     def __init__(self, speed=1, factor=0.02, v=0.5):
         self.num = int(NUMPIXELS * factor)
         self.skip = int(NUMPIXELS / self.num)
@@ -135,7 +142,7 @@ class EveryNth(object):
             x = bound(int(self.offset + self.skip * i))
             strip.addPixelHSV(x, 0, 0, self.v)
 
-class Sparkle(object):
+class Sparkle(Scene):
     def step(self):
         pass
 
@@ -144,7 +151,7 @@ class Sparkle(object):
             if random.random() > 0.999:
                 strip.addPixelHSV(i, random.random(), 0.3, random.random())
 
-class SparkleFade(object):
+class SparkleFade(Scene):
     def __init__(self, interval=0.01, max_age=.8, max_v=0.5):
         """Sparkles that fade over time.
 
@@ -181,7 +188,7 @@ class SparkleFade(object):
             v = v_factor * self.max_v
             strip.addPixelHSV(i, 0, 0.0, v)
 
-class Tunnel(object):
+class Tunnel(Scene):
     def __init__(self):
         self.front = 350
         self.back = (self.front + 180) % 360
@@ -201,7 +208,7 @@ class Tunnel(object):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(i, self.bandangle/90., 1, 0.2)
 
-class Falls(object):
+class Falls(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
         self.bandwidth = 15
@@ -219,19 +226,16 @@ class Falls(object):
                 b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase) * cos(d / self.bandwidth * 2 * pi)
                 strip.addPixelHSV(i, self.hue, 0.5, b)
 
-class Predicate(object):
+class Predicate(Scene):
     def __init__(self, predicate):
         self.f = predicate
-
-    def step(self):
-        pass
 
     def show(self):
         for i in xrange(NUMPIXELS):
             if self.f(i):
                 strip.addPixelHSV(i, 0, 0, 0.04)
 
-class InteractiveWalk(object):
+class InteractiveWalk(Scene):
     def __init__(self):
         self.pos = 124
         self.radius = 3
