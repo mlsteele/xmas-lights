@@ -232,7 +232,7 @@ class InteractiveWalk(object):
 
 sprites = []
 
-def emptyScene(sprites):
+def empty_scene(sprites):
     pass
 
 def multi_scene(sprites):
@@ -256,12 +256,12 @@ def sparkle_scene(sprites):
 def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
-def gameScene(sprites):
+def game_scene(sprites):
     sprites.append(InteractiveWalk())
 
-EmptyMode   = {emptyScene}
+EmptyMode   = {empty_scene}
 AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
-GameMode    = {gameScene}
+GameMode    = {game_scene}
 
 Modes = {
     'empty'  : EmptyMode,
@@ -335,6 +335,12 @@ def handle_message():
             print gamekeys
     else:
         print "unknown message type:", messageType
+
+import sys
+if len(sys.argv) > 2 and sys.argv[1] == '--scene':
+    scene = eval(sys.argv[2] + '_scene')
+    if scene:
+        select_mode({scene})
 
 print "Starting."
 try:
