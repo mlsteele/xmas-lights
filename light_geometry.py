@@ -14,6 +14,8 @@ class Pixel(object):
         return min(d % 360, -d % 360)
 
 class Pixels(object):
+    count = NUMPIXELS
+
     # Iterates over pixels, returning the same Flyweight each time.
     @staticmethod
     def iter():
