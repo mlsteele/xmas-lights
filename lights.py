@@ -235,32 +235,32 @@ sprites = []
 def emptyScene(sprites):
     pass
 
-def scene1(sprites):
+def multi_scene(sprites):
     N_SNAKES = 15
     sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
 
-def scene2(sprites):
+def snakes_scene(sprites):
     N_SNAKES = 15
     sprites.extend(Snake(head=i*(NUMPIXELS / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
 
-def scene3(sprites):
+def nth_scene(sprites):
     sprites.append(EveryNth(factor=0.1))
     sprites.append(EveryNth(factor=0.101))
 
-def scene4(sprites):
+def sparkle_scene(sprites):
     sprites.append(Sparkle())
     sprites.append(SparkleFade())
 
-def scene5(sprites):
+def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
 def gameScene(sprites):
     sprites.append(InteractiveWalk())
 
 EmptyMode   = {emptyScene}
-AttractMode = {scene1, scene2, scene3, scene4, scene5}
+AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
 GameMode    = {gameScene}
 
 Modes = {
@@ -280,6 +280,7 @@ def pickScene():
     if not otherScenes:
         otherScenes = CurrentMode
     scene = random.choice(list(otherScenes))
+    print 'selecting', scene.__name__
     CurrentScene = scene
     sprites = []
     scene(sprites)
