@@ -34,6 +34,13 @@ class Pixels(object):
             pixel.index += 1
 
     @staticmethod
+    def near_angle(angle, band_width=0):
+        half_band = band_width / 2.0
+        for pixel in Pixels.iter():
+            if abs(pixel.angle_from(angle)) < half_band:
+                yield pixel
+
+    @staticmethod
     def angle(index):
         return PixelAngle.angle(index)
 

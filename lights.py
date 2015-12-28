@@ -139,6 +139,9 @@ class Tunnel(Scene):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
+        # for pixel in Pixels.near_angle(self.bandangle, band_width=self.bandwidth):
+        #     strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
+
 class Drips(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
