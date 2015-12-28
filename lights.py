@@ -6,15 +6,9 @@ import signal
 from math import sin, cos, pi
 import apa102
 from messages import get_message
-from light_geometry import NUMPIXELS, PixelAngle
+from light_geometry import NUMPIXELS, PixelAngle, Pixels
 
 strip = apa102.APA102(NUMPIXELS)
-
-def angdist(x, y):
-    """Minimum distance between two angles (in degrees)."""
-    x = (x + 360) % 360
-    y = (y + 360) % 360
-    return min([abs((x - y) % 360), abs((y - x) % 360)])
 
 def bound(x):
     return x % NUMPIXELS
@@ -140,14 +134,14 @@ class Tunnel(Scene):
         self.front %= 360
 
     def show(self):
-        for i in xrange(NUMPIXELS):
-            d = angdist(PixelAngle.angle(i), self.front)
+        for pixel in Pixels.iter():
+            d = pixel.angle_from(self.front)
             if abs(d - self.bandangle) < self.bandwidth/2.:
-                strip.addPixelHSV(i, self.bandangle/90., 1, 0.2)
+                strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
 class Falls(Scene):
     def __init__(self):
-        self.angle = 360 * random.random()
+        self.front = 360 * random.random()
         self.bandwidth = 15
         self.phase = 0
         self.hue = random.random()
@@ -156,12 +150,12 @@ class Falls(Scene):
         self.phase += 0.1
 
     def show(self):
-        for i in xrange(NUMPIXELS):
-            d = angdist(PixelAngle.angle(i), self.angle)
+        for pixel in Pixels.iter():
+            d = pixel.angle_from(self.front)
             if abs(d) < self.bandwidth/2.:
-                r = 1 - (i / float(NUMPIXELS))
+                r = 1 - (pixel.index / float(NUMPIXELS))
                 b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase) * cos(d / self.bandwidth * 2 * pi)
-                strip.addPixelHSV(i, self.hue, 0.5, b)
+                strip.addPixelHSV(pixel.index, self.hue, 0.5, b)
 
 class Predicate(Scene):
     def __init__(self, predicate):

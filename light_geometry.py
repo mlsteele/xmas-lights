@@ -5,6 +5,23 @@ with open('geometry.yaml') as f:
 
 NUMPIXELS = CONFIG['pixels']['count'] # Number of LEDs in strip
 
+class Pixel(object):
+    def __init__(self, index):
+        self.index = index
+
+    def angle_from(self, angle):
+        d = abs(PixelAngle.angle(self.index) - angle)
+        return min(d % 360, -d % 360)
+
+class Pixels(object):
+    # Iterates over pixels, returning the same Flyweight each time.
+    @staticmethod
+    def iter():
+        pixel = Pixel(0)
+        while pixel.index < NUMPIXELS:
+            yield pixel
+            pixel.index += 1
+
 class PixelAngle(object):
     # Map from pixel indices to angles in degrees.
     # The front face of the tree is 0.
