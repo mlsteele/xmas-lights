@@ -1,22 +1,18 @@
-NUMPIXELS = 900 # Number of LEDs in strip
+import yaml
+
+with open('geometry.yaml') as f:
+    CONFIG = yaml.safe_load(f)
+
+NUMPIXELS = CONFIG['pixels']['count'] # Number of LEDs in strip
 
 class PixelAngle(object):
     # Map from pixel indices to angles in degrees.
     # The front face of the tree is 0.
     # Angles increase CCW looking from the heavens.
-    REF_ANGLES = {
-        0: 180,
-        120: 0,
-        336: 0,
-        527: 0,
-        648: 0,
-        737: 0,
-        814: 0,
-        862: 0,
-        876: 0,
-        886: 0,
-        NUMPIXELS: 180,
-    }
+    REF_ANGLES = {}
+    for angle, indices in CONFIG['pixels']['angles'].items():
+        for index in indices:
+            REF_ANGLES[index] = angle
 
     cache = {}
 

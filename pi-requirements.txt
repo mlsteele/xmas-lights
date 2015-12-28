@@ -2,4 +2,5 @@
 # Install via `pip -r pi-requirements.txt`
 
 pika>=0.9.13
+pyyaml>=3.11
 spidev>=3.0

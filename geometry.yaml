@@ -1,0 +1,5 @@
+pixels:
+  count: 900 # number of pixels
+  angles:
+    0: [120, 336, 527, 648, 737, 814, 862, 876, 886] # pixels facing the front
+    180: [0, 900] # pixels facing the back
