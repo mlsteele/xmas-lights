@@ -139,7 +139,7 @@ class Tunnel(Scene):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
-class Drops(Scene):
+class Drips(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
         self.phase = 0
@@ -222,14 +222,14 @@ def sparkle_scene(sprites):
 def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
-def drops_scene(sprites):
-    sprites.extend(Drops() for _ in xrange(15))
+def drips_scene(sprites):
+    sprites.extend(Drips() for _ in xrange(15))
 
 def game_scene(sprites):
     sprites.append(InteractiveWalk())
 
 EmptyMode   = {empty_scene}
-AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene, drops_scene}
+AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
 GameMode    = {game_scene}
 
 Modes = {
@@ -316,6 +316,8 @@ if len(sys.argv) > 2 and sys.argv[1] == '--scene':
     scene = eval(sys.argv[2] + '_scene')
     if scene:
         select_mode({scene})
+    else:
+        print "Unknown scene:", sys.argv[2]
 
 print "Starting."
 try:
