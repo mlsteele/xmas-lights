@@ -3,7 +3,7 @@
 import time
 import random
 import signal
-from math import sin, cos
+from math import sin, cos, pi
 import apa102
 from messages import get_message
 
@@ -201,6 +201,24 @@ class Tunnel(object):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(i, self.bandangle/90., 1, 0.2)
 
+class Falls(object):
+    def __init__(self):
+        self.angle = 360 * random.random()
+        self.bandwidth = 15
+        self.phase = 0
+        self.hue = random.random()
+
+    def step(self):
+        self.phase += 0.1
+
+    def show(self):
+        for i in xrange(NUMPIXELS):
+            d = angdist(PixelAngle.angle(i), self.angle)
+            if abs(d) < self.bandwidth/2.:
+                r = 1 - (i / float(NUMPIXELS))
+                b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase) * cos(d / self.bandwidth * 2 * pi)
+                strip.addPixelHSV(i, self.hue, 0.5, b)
+
 class Predicate(object):
     def __init__(self, predicate):
         self.f = predicate
@@ -255,6 +273,9 @@ def sparkle_scene(sprites):
 
 def tunnel_scene(sprites):
     sprites.append(Tunnel())
+
+def falls_scene(sprites):
+    sprites.extend(Falls() for _ in xrange(10))
 
 def game_scene(sprites):
     sprites.append(InteractiveWalk())
