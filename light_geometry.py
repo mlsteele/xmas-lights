@@ -1,4 +1,5 @@
 import yaml
+from math import sin, cos, pi
 
 with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)
@@ -9,8 +10,12 @@ class Pixel(object):
     def __init__(self, index):
         self.index = index
 
+    @property
+    def angle(self):
+        return PixelAngle.angle(self.index)
+
     def angle_from(self, angle):
-        d = abs(PixelAngle.angle(self.index) - angle)
+        d = abs(self.angle - angle)
         return min(d % 360, -d % 360)
 
 class Pixels(object):
@@ -23,6 +28,22 @@ class Pixels(object):
         while pixel.index < NUMPIXELS:
             yield pixel
             pixel.index += 1
+
+    @staticmethod
+    def angle(index):
+        return PixelAngle.angle(index)
+
+    @staticmethod
+    def radius(index):
+        return 1 - index / float(NUMPIXELS)
+
+    @staticmethod
+    def pos(index):
+        angle = Pixels.angle(index) * pi / 180
+        radius = Pixels.radius(index)
+        x = 0.5 + radius * cos(angle) / 2.0
+        y = 0.5 + radius * sin(angle) / 2.0
+        return (x, y)
 
 class PixelAngle(object):
     # Map from pixel indices to angles in degrees.
