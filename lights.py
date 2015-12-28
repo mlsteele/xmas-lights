@@ -311,13 +311,22 @@ def handle_message():
     else:
         print "unknown message type:", messageType
 
+import argparse
+parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
+parser.add_argument('--scene', dest='scene', type=str)
+parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
+
+args = parser.parse_args()
+
 import sys
-if len(sys.argv) > 2 and sys.argv[1] == '--scene':
-    scene = eval(sys.argv[2] + '_scene')
-    if scene:
-        select_mode({scene})
-    else:
-        print "Unknown scene:", sys.argv[2]
+if args.scene:
+    scene = None
+    try:
+        scene = eval(args.scene + '_scene')
+    except NameError:
+        print >> sys.stderr, "Unknown scene:", args.scene
+        exit(1)
+    select_mode({scene})
 
 print "Starting."
 try:
@@ -328,8 +337,8 @@ try:
         delta_t = frame_t - last_frame_t
         if delta_t < ideal_frame_delta_t:
             time.sleep(ideal_frame_delta_t - delta_t)
-        # else:
-        #     print "Frame lagging. Time to optimize."
+        elif args.warn:
+            print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
         handle_message()
