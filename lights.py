@@ -303,10 +303,6 @@ def selectMode(sceneSet, switchMessage=None):
 # angle_width = lambda: 10
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
 
-def handleSIGINT(signum, frame):
-    print 'received SIGINT; cleaning up', signum
-    strip.cleanup()
-
 def handle_action(message):
     global CurrentMode, Modes
     action = message["action"]
@@ -337,8 +333,6 @@ def handle_message():
             print gamekeys
     else:
         print "unknown message type:", messageType
-
-signal.signal(signal.SIGINT, handleSIGINT)
 
 print "Starting."
 try:
