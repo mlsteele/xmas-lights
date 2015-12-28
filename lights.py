@@ -11,18 +11,6 @@ NUMPIXELS = 900 # Number of LEDs in strip
 
 strip = apa102.APA102(NUMPIXELS)
 
-gamekeys = {
-    "left": False,
-    "right": False,
-    "fire": False,
-}
-
-RED   = 0xff0000
-GREEN = 0x00ff00
-BLUE  = 0x0000ff
-BLACK = 0x000000
-WHITE = 0xffffff
-
 class PixelAngle(object):
     # Map from pixel indices to angles in degrees.
     # The front face of the tree is 0.
@@ -101,6 +89,9 @@ class Profiler:
         print "profiled {}: {:.0f} (ms)".format(self.name, self.interval * 1000)
 
 class Scene(object):
+    def handle_game_keys(self, keys):
+        pass
+
     def step(self):
         pass
 
@@ -240,10 +231,10 @@ class InteractiveWalk(Scene):
         self.pos = 124
         self.radius = 3
 
-    def step(self):
-        if gamekeys["left"]:
+    def handle_game_keys(self, keys):
+        if keys["left"]:
             self.pos -= 1
-        if gamekeys["right"]:
+        if keys["right"]:
             self.pos += 1
         self.pos = bound(self.pos)
 
@@ -356,8 +347,14 @@ def handle_message():
         select_mode(GameMode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
+            gamekeys = {
+                "left": False,
+                "right": False,
+                "fire": False,
+            }
             gamekeys[key] = bool(state)
             print gamekeys
+            CurrentScene.handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
 
