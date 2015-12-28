@@ -9,6 +9,18 @@
     "IFTTT_TOKEN": {
       "description": "A secret key for authenticating IFTTT Maker requests.",
       "generator": "secret"
+    },
+    "SLACK_TOKEN": {
+      "description": "Optional; for Slack integration. The Outgoing WebHook Token.",
+      "required": "false"
+    },
+    "TWILIO_ACCOUNT_SID": {
+      "description": "Optional; for Twilio integration.",
+      "required": "false"
+    },
+    "TWILIO_AUTH_TOKEN": {
+      "description": "Optional; for Twilio integration.",
+      "required": "false"
     }
   }
 }
