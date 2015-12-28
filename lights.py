@@ -147,26 +147,28 @@ class Drips(Scene):
         self.phase = random.random()
 
     def step(self):
-        self.phase += 0.2
-        if self.phase > 2 + random.random():
-            self.phase = -random.random()
+        self.phase += 0.05
+        if self.phase > 1.1:
+            self.phase = -0.1
             self.angle = 360 * random.random()
             self.hue = random.random()
 
     def show(self):
         a0 = None
         da0 = None
+        decay = 0.3
         for pixel in Pixels.iter():
             a = pixel.angle_from(self.angle)
             if a0 is not None:
                 da = a - a0
                 if da0 is not None and da0 <= 0 and da >= 0:
-                    r = pixel.radius
+                    ix = pixel.index
+                    if a0 < a: ix -= 1
+                    r = Pixels.radius(ix)
                     b = abs(r - self.phase)
-                    if b < 1:
-                        b = (1 - b) ** 2
-                        # b = 0.5 + 0.5 * sin(r * 2 * pi + self.phase)
-                        strip.addPixelHSV(pixel.index, self.hue, 0.5, b)
+                    if b < decay:
+                        b = (1 - b / decay) ** 4
+                        strip.addPixelHSV(ix, self.hue, 1, b/2)
                 da0 = da
             a0 = a
 
@@ -223,7 +225,7 @@ def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
 def drips_scene(sprites):
-    sprites.extend(Drips() for _ in xrange(15))
+    sprites.extend(Drips() for _ in xrange(3))
 
 def game_scene(sprites):
     sprites.append(InteractiveWalk())
