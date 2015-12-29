@@ -42,7 +42,22 @@ class PixelStrip(object):
             pixel.index += 1
 
     @staticmethod
-    def near_angle(angle, band_width=0):
+    def pixels_near_angle(angle):
+        a0 = None
+        da0 = None
+        for pixel in PixelStrip.pixels():
+            a = pixel.angle_from(angle)
+            if a0 is not None:
+                da = a - a0
+                if da0 is not None and da0 <= 0 and da >= 0:
+                    ix = pixel.index
+                    if a0 < a: ix -= 1
+                    yield Pixel(ix)
+                da0 = da
+            a0 = a
+
+    @staticmethod
+    def pixels_within_angles(angle, band_width=0):
         half_band = band_width / 2.0
         for pixel in PixelStrip.iter():
             if abs(pixel.angle_from(angle)) < half_band:

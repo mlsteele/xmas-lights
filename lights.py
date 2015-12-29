@@ -139,9 +139,6 @@ class Tunnel(Scene):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
-        # for pixel in PixelStrip.near_angle(self.bandangle, band_width=self.bandwidth):
-        #     strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
-
 class Drips(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
@@ -157,23 +154,12 @@ class Drips(Scene):
             self.hue = random.random()
 
     def show(self):
-        a0 = None
-        da0 = None
         decay = 0.3
-        for pixel in PixelStrip.pixels():
-            a = pixel.angle_from(self.angle)
-            if a0 is not None:
-                da = a - a0
-                if da0 is not None and da0 <= 0 and da >= 0:
-                    ix = pixel.index
-                    if a0 < a: ix -= 1
-                    r = PixelStrip.radius(ix)
-                    b = abs(r - self.phase)
-                    if b < decay:
-                        b = (1 - b / decay) ** 4
-                        strip.addPixelHSV(ix, self.hue, 1, b/2)
-                da0 = da
-            a0 = a
+        for pixel in PixelStrip.pixels_near_angle(self.angle):
+            b = abs(pixel.radius - self.phase)
+            if b < decay:
+                b = (1 - b / decay) ** 4
+                strip.addPixelHSV(pixel.index, self.hue, 1, b/2)
 
 class Predicate(Scene):
     def __init__(self, predicate):
