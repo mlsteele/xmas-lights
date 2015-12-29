@@ -1,5 +1,15 @@
-import yaml
+# from functools import lru_cache
 from math import sin, cos, pi
+import yaml
+
+# source: http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
+def memoize(f):
+  class memodict(dict):
+      __slots__ = ()
+      def __missing__(self, key):
+          self[key] = ret = f(key)
+          return ret
+  return memodict().__getitem__
 
 with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)
@@ -66,17 +76,12 @@ class PixelAngle(object):
         for index in indices:
             REF_ANGLES[index] = angle
 
-    cache = {}
-
     @staticmethod
+    @memoize
     def angle(i):
         """Get the angle of a pixel.
         Estimate by linear approximation between two closest known neighbors.
         """
-        angle = PixelAngle.cache.get(i)
-        if angle is not None:
-            return angle
-
         angle = PixelAngle.REF_ANGLES.get(i)
         if angle is not None:
             return angle
@@ -88,7 +93,4 @@ class PixelAngle(object):
         if right_a <= left_a:
             right_a += 360
         ratio = (i - left_i) / float(right_i - left_i)
-        predicted = (left_a * (1 - ratio) + right_a * ratio) % 360
-
-        PixelAngle.cache[i] = predicted
-        return predicted
+        return (left_a * (1 - ratio) + right_a * ratio) % 360
