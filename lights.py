@@ -306,6 +306,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
 parser.add_argument('--scene', dest='scene', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
+parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
 args = parser.parse_args()
 
@@ -320,12 +321,17 @@ if args.scene:
     select_mode({scene})
 
 print "Starting."
+frame_deltas = []
 try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
     while True:
         frame_t = time.time()
         delta_t = frame_t - last_frame_t
+        frame_deltas.append(delta_t)
+        if len(frame_deltas) > 60:
+            frame_deltas.pop()
+        if args.print_frame_rate: print "Frame rate:", 1 / (sum(frame_deltas) / len(frame_deltas))
         if delta_t < ideal_frame_delta_t:
             time.sleep(ideal_frame_delta_t - delta_t)
         elif args.warn:
