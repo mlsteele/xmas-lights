@@ -6,12 +6,12 @@ import signal
 from math import sin, cos, pi
 import apa102
 from messages import get_message
-from led_geometry import PixelAngle, Pixels
+from led_geometry import PixelAngle, PixelStrip
 
-strip = apa102.APA102(Pixels.count)
+strip = apa102.APA102(PixelStrip.count)
 
 def bound(x):
-    return x % Pixels.count
+    return x % PixelStrip.count
 
 class Profiler:
     def __init__(self, name="_"):
@@ -53,13 +53,13 @@ class Snake(Scene):
 
     def show(self):
         for i in xrange(self.length):
-            h, s, v = 0.5 * (self.hue_offset+self.head+i) / Pixels.count, 1, self.brightness * i / self.length
+            h, s, v = 0.5 * (self.hue_offset+self.head+i) / PixelStrip.count, 1, self.brightness * i / self.length
             strip.addPixelHSV(bound(self.head + i), h, s, v)
 
 class EveryNth(Scene):
     def __init__(self, speed=1, factor=0.02, v=0.5):
-        self.num = int(Pixels.count * factor)
-        self.skip = int(Pixels.count / self.num)
+        self.num = int(PixelStrip.count * factor)
+        self.skip = int(PixelStrip.count / self.num)
         self.speed = speed
         self.offset = 0
         self.v = v
@@ -78,7 +78,7 @@ class Sparkle(Scene):
         pass
 
     def show(self):
-        for i in xrange(Pixels.count):
+        for i in xrange(PixelStrip.count):
             if random.random() > 0.999:
                 strip.addPixelHSV(i, random.random(), 0.3, random.random())
 
@@ -104,7 +104,7 @@ class SparkleFade(Scene):
         for _ in xrange(int(min(intervals_passed, 10))):
             # Create a new pixel.
             self.last_appear = time.time()
-            i = random.randint(0, Pixels.count-1)
+            i = random.randint(0, PixelStrip.count-1)
             self.active[i] = time.time()
 
         for i, activation_time in self.active.items():
@@ -134,12 +134,12 @@ class Tunnel(Scene):
         self.front %= 360
 
     def show(self):
-        for pixel in Pixels.iter():
+        for pixel in PixelStrip.pixels():
             d = pixel.angle_from(self.front)
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
-        # for pixel in Pixels.near_angle(self.bandangle, band_width=self.bandwidth):
+        # for pixel in PixelStrip.near_angle(self.bandangle, band_width=self.bandwidth):
         #     strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
 class Drips(Scene):
@@ -160,14 +160,14 @@ class Drips(Scene):
         a0 = None
         da0 = None
         decay = 0.3
-        for pixel in Pixels.iter():
+        for pixel in PixelStrip.pixels():
             a = pixel.angle_from(self.angle)
             if a0 is not None:
                 da = a - a0
                 if da0 is not None and da0 <= 0 and da >= 0:
                     ix = pixel.index
                     if a0 < a: ix -= 1
-                    r = Pixels.radius(ix)
+                    r = PixelStrip.radius(ix)
                     b = abs(r - self.phase)
                     if b < decay:
                         b = (1 - b / decay) ** 4
@@ -180,7 +180,7 @@ class Predicate(Scene):
         self.f = predicate
 
     def show(self):
-        for i in xrange(Pixels.count):
+        for i in xrange(PixelStrip.count):
             if self.f(i):
                 strip.addPixelHSV(i, 0, 0, 0.04)
 
@@ -208,13 +208,13 @@ def empty_scene(sprites):
 
 def multi_scene(sprites):
     N_SNAKES = 15
-    sprites.extend(Snake(head=i*(Pixels.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+    sprites.extend(Snake(head=i*(PixelStrip.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
 
 def snakes_scene(sprites):
     N_SNAKES = 15
-    sprites.extend(Snake(head=i*(Pixels.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+    sprites.extend(Snake(head=i*(PixelStrip.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
 
 def nth_scene(sprites):
     sprites.append(EveryNth(factor=0.1))

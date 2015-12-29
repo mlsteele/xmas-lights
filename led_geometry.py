@@ -14,8 +14,6 @@ def memoize(f):
 with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)
 
-NUMPIXELS = CONFIG['pixels']['count'] # Number of LEDs in strip
-
 class Pixel(object):
     def __init__(self, index):
         self.index = index
@@ -26,27 +24,27 @@ class Pixel(object):
 
     @property
     def radius(self):
-        return Pixels.radius(self.index)
+        return PixelStrip.radius(self.index)
 
     def angle_from(self, angle):
         d = abs(self.angle - angle)
         return min(d % 360, -d % 360)
 
-class Pixels(object):
-    count = NUMPIXELS
+class PixelStrip(object):
+    count = CONFIG['pixels']['count']
 
     # Iterates over pixels, returning the same Flyweight each time.
     @staticmethod
-    def iter():
+    def pixels():
         pixel = Pixel(0)
-        while pixel.index < NUMPIXELS:
+        while pixel.index < PixelStrip.count:
             yield pixel
             pixel.index += 1
 
     @staticmethod
     def near_angle(angle, band_width=0):
         half_band = band_width / 2.0
-        for pixel in Pixels.iter():
+        for pixel in PixelStrip.iter():
             if abs(pixel.angle_from(angle)) < half_band:
                 yield pixel
 
@@ -56,12 +54,12 @@ class Pixels(object):
 
     @staticmethod
     def radius(index):
-        return 1 - index / float(NUMPIXELS)
+        return 1 - index / float(PixelStrip.count)
 
     @staticmethod
     def pos(index):
-        angle = Pixels.angle(index) * pi / 180
-        radius = Pixels.radius(index)
+        angle = PixelStrip.angle(index) * pi / 180
+        radius = PixelStrip.radius(index)
         x = 0.5 + radius * cos(angle) / 2.0
         y = 0.5 + radius * sin(angle) / 2.0
         return (x, y)
