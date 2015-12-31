@@ -270,7 +270,7 @@ def select_mode(sceneSet, switchMessage=None):
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
 
 def handle_action(message):
-    global CurrentMode, Modes
+    global CurrentMode, Modes, FrameMode
     action = message["action"]
     if action == "next":
         print "Advancing to next scene."
@@ -279,29 +279,40 @@ def handle_action(message):
         if not select_mode(EmptyMode, "toggle: off"):
             select_mode(AttractMode, "toggle: on")
         select_another_scene()
+    elif action == "off":
+        print 'off'
+        FrameMode = 'stopped'
+        strip.clear()
+        strip.show()
+    elif action == "stop":
+        print 'stop'
+        FrameMode = 'stopped'
+    elif action in ["start", "resume", "on"]:
+        print 'start'
+        FrameMode = 'scenes'
     elif Modes.get(action):
         select_mode(Modes[action])
     else:
         print "unknown message:", action
 
-ReceiverMode = 'default'
+FrameMode = 'scenes'
 
 def handle_message():
-    global ReceiverMode
+    global FrameMode
     message = get_message()
     if not message: return
     messageType = message["type"]
     if messageType == "action":
-        ReceiverMode = 'default'
+        FrameMode = 'scenes'
         handle_action(message)
     elif messageType == "pixels":
-        # print 'switch to mode', ReceiverMode
-        ReceiverMode = 'pixels'
+        # print 'switch to mode', FrameMode
+        FrameMode = 'slave'
         strip.clear()
         strip.leds = pickle.loads(str(message["leds"]))
         strip.show()
     elif messageType == "gamekey":
-        ReceiverMode = 'default'
+        FrameMode = 'default'
         select_mode(GameMode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
@@ -318,7 +329,7 @@ def handle_message():
 
 import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
-parser.add_argument('--publish', dest='publish', action='store_true')
+parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
@@ -335,13 +346,11 @@ if args.scene:
         exit(1)
     select_mode({scene})
 
-def do_frame():
-    global ReceiverMode, FrameCount, sprites, args
+def do_slave_frame():
+    pass
 
-    if not args.publish:
-        handle_message()
-    if ReceiverMode == 'pixels':
-        return
+def do_scenes_frame():
+    global FrameCount
 
     FrameCount -= 1
     if FrameCount <= 0:
@@ -355,8 +364,17 @@ def do_frame():
 
     strip.show()
 
-    if args.publish:
-        publish("pixels", leds=pickle.dumps(strip.leds))
+def do_stopped_frame():
+    pass
+
+FrameModeFunctions = {
+    'slave'  : do_slave_frame,
+    'scenes' : do_scenes_frame,
+    'stopped': do_stopped_frame,
+}
+
+def do_frame():
+    FrameModeFunctions[FrameMode]()
 
 print "Starting."
 frame_deltas = []
@@ -377,7 +395,11 @@ try:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
+        if not args.master:
+            handle_message()
         do_frame()
+        if args.master:
+            publish("pixels", leds=pickle.dumps(strip.leds))
 
 finally:
     strip.cleanup()
