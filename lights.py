@@ -4,8 +4,9 @@ import time
 import random
 import signal
 from math import sin, cos, pi
+import cPickle as pickle
 import apa102
-from messages import get_message
+from messages import get_message, publish
 from led_geometry import PixelAngle, PixelStrip
 
 strip = apa102.APA102(PixelStrip.count)
@@ -280,14 +281,24 @@ def handle_action(message):
     else:
         print "unknown message:", action
 
+ReceiverMode = 'default'
+
 def handle_message():
+    global ReceiverMode
     message = get_message()
     if not message: return
-    print message
     messageType = message["type"]
     if messageType == "action":
+        ReceiverMode = 'default'
         handle_action(message)
+    elif messageType == "pixels":
+        # print 'switch to mode', ReceiverMode
+        ReceiverMode = 'pixels'
+        strip.clear()
+        strip.leds = pickle.loads(str(message["leds"]))
+        strip.show()
     elif messageType == "gamekey":
+        ReceiverMode = 'default'
         select_mode(GameMode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
@@ -304,6 +315,7 @@ def handle_message():
 
 import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
+parser.add_argument('--publish', dest='publish', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
@@ -338,11 +350,15 @@ try:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        handle_message()
+        if not args.publish:
+            handle_message()
+            if ReceiverMode == 'pixels':
+                continue
 
         FrameCount -= 1
         if FrameCount <= 0:
             select_another_scene()
+
         strip.clear()
 
         for sprite in sprites:
@@ -350,6 +366,9 @@ try:
             sprite.step()
 
         strip.show()
+
+        if args.publish:
+            publish("pixels", leds=pickle.dumps(strip.leds))
 
 finally:
     strip.cleanup()
