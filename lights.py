@@ -140,6 +140,9 @@ class Tunnel(Scene):
             if abs(d - self.bandangle) < self.bandwidth/2.:
                 strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
 
+        # for pixel in Pixels.near_angle(self.bandangle, band_width=self.bandwidth):
+        #     strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
+
 class Drips(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
@@ -332,11 +335,35 @@ if args.scene:
         exit(1)
     select_mode({scene})
 
+def do_frame():
+    global ReceiverMode, FrameCount, sprites, args
+
+    if not args.publish:
+        handle_message()
+    if ReceiverMode == 'pixels':
+        return
+
+    FrameCount -= 1
+    if FrameCount <= 0:
+        select_another_scene()
+
+    strip.clear()
+
+    for sprite in sprites:
+        sprite.show()
+        sprite.step()
+
+    strip.show()
+
+    if args.publish:
+        publish("pixels", leds=pickle.dumps(strip.leds))
+
 print "Starting."
 frame_deltas = []
 try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
+
     while True:
         frame_t = time.time()
         delta_t = frame_t - last_frame_t
@@ -350,25 +377,7 @@ try:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        if not args.publish:
-            handle_message()
-            if ReceiverMode == 'pixels':
-                continue
-
-        FrameCount -= 1
-        if FrameCount <= 0:
-            select_another_scene()
-
-        strip.clear()
-
-        for sprite in sprites:
-            sprite.show()
-            sprite.step()
-
-        strip.show()
-
-        if args.publish:
-            publish("pixels", leds=pickle.dumps(strip.leds))
+        do_frame()
 
 finally:
     strip.cleanup()
