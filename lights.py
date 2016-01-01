@@ -4,7 +4,7 @@ import time
 import random
 import signal
 from math import sin, cos, pi
-import cPickle as pickle
+import json
 import apa102
 from messages import get_message, publish
 from led_geometry import PixelAngle, PixelStrip
@@ -311,7 +311,7 @@ def handle_message():
         # print 'switch to mode', FrameMode
         FrameMode = 'slave'
         global LEDState
-        LEDState = pickle.loads(str(message["leds"]))
+        LEDState = json.loads(str(message["leds"]))
     elif messageType == "gamekey":
         FrameMode = 'default'
         select_mode(GameMode, "game mode on")
@@ -399,7 +399,8 @@ try:
             frame_deltas.pop()
         if args.print_frame_rate: print "Frame rate:", 1 / (sum(frame_deltas) / len(frame_deltas))
         if delta_t < ideal_frame_delta_t:
-            time.sleep(ideal_frame_delta_t - delta_t)
+            if FrameMode != 'slave':
+                time.sleep(ideal_frame_delta_t - delta_t)
         elif args.warn:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
@@ -407,7 +408,7 @@ try:
         strip.show()
 
         if args.master:
-            publish("pixels", leds=pickle.dumps(strip.leds))
+            publish("pixels", leds=json.dumps(strip.leds))
 
 finally:
     strip.cleanup()
