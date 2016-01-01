@@ -285,7 +285,6 @@ def handle_action(message):
         print 'off'
         FrameMode = 'stopped'
         strip.clear()
-        strip.show()
     elif action == "stop":
         print 'stop'
         FrameMode = 'stopped'
@@ -354,7 +353,6 @@ def do_slave_frame():
     if not LEDState: return
     strip.clear()
     strip.leds = LEDState
-    strip.show()
     LEDState = None
 
 def do_scenes_frame():
@@ -369,8 +367,6 @@ def do_scenes_frame():
     for sprite in sprites:
         sprite.show()
         sprite.step()
-
-    strip.show()
 
 def do_stopped_frame():
     pass
@@ -391,6 +387,11 @@ try:
     ideal_frame_delta_t = 1.0 / 60
 
     while True:
+        if not args.master:
+            handle_message()
+
+        do_frame()
+
         frame_t = time.time()
         delta_t = frame_t - last_frame_t
         frame_deltas.append(delta_t)
@@ -403,10 +404,7 @@ try:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
-        if not args.master:
-            handle_message()
-
-        do_frame()
+        strip.show()
 
         if args.master:
             publish("pixels", leds=pickle.dumps(strip.leds))
