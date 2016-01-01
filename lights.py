@@ -269,6 +269,8 @@ def select_mode(sceneSet, switchMessage=None):
 # angle_width = lambda: 10
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
 
+LEDState = None
+
 def handle_action(message):
     global CurrentMode, Modes, FrameMode
     action = message["action"]
@@ -300,7 +302,8 @@ FrameMode = 'scenes'
 def handle_message():
     global FrameMode
     message = get_message()
-    if not message: return
+    if not message: return False
+
     messageType = message["type"]
     if messageType == "action":
         FrameMode = 'scenes'
@@ -308,9 +311,8 @@ def handle_message():
     elif messageType == "pixels":
         # print 'switch to mode', FrameMode
         FrameMode = 'slave'
-        strip.clear()
-        strip.leds = pickle.loads(str(message["leds"]))
-        strip.show()
+        global LEDState
+        LEDState = pickle.loads(str(message["leds"]))
     elif messageType == "gamekey":
         FrameMode = 'default'
         select_mode(GameMode, "game mode on")
@@ -326,6 +328,7 @@ def handle_message():
             CurrentScene.handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
+    return True
 
 import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
@@ -347,7 +350,12 @@ if args.scene:
     select_mode({scene})
 
 def do_slave_frame():
-    pass
+    global LEDState
+    if not LEDState: return
+    strip.clear()
+    strip.leds = LEDState
+    strip.show()
+    LEDState = None
 
 def do_scenes_frame():
     global FrameCount
@@ -397,7 +405,9 @@ try:
 
         if not args.master:
             handle_message()
+
         do_frame()
+
         if args.master:
             publish("pixels", leds=pickle.dumps(strip.leds))
 
