@@ -257,7 +257,7 @@ def select_mode(sceneSet, switchMessage=None):
 LEDState = None
 
 def handle_action(message):
-    global CurrentMode, Modes, FrameMode
+    global CurrentMode, Modes, FrameMode, Spinning, SpinCount
     action = message["action"]
     if action == "next":
         print "Advancing to next scene."
@@ -276,6 +276,9 @@ def handle_action(message):
     elif action in ["start", "resume", "on"]:
         print 'start'
         FrameMode = 'scenes'
+    elif action == "spin":
+        Spinning = True
+        SpinCount = 0
     elif Modes.get(action):
         select_mode(Modes[action])
     else:
@@ -367,6 +370,8 @@ def do_frame():
 
 print "Starting."
 frame_deltas = []
+Spinning = False
+SpinCount = 0
 try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
@@ -390,6 +395,11 @@ try:
             print "Frame lagging. Time to optimize."
         last_frame_t = time.time()
 
+        if Spinning:
+            strip.leds = strip.leds[SpinCount:] + strip.leds[:SpinCount]
+            SpinCount += 10
+            if SpinCount >= 450:
+                Spinning = False
         strip.show()
 
         if args.master:
