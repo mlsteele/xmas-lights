@@ -52,10 +52,10 @@ Essentially the driver sends additional zeroes to LED 1 as long as it takes for 
 to make it down the line to the last LED.
 """
 class APA102:
-    def __init__(self, numLEDs, globalBrightness = 31): # The number of LEDs in the Strip
+    def __init__(self, numLEDs, globalBrightness=31): # The number of LEDs in the Strip
         self.numLEDs = numLEDs
         # LED startframe is three "1" bits, followed by 5 brightness bits
-        self.ledstart = (globalBrightness & 0b00011111) | 0b11100000 # Don't validate; just slash off extra bits
+        self.ledstart = (globalBrightness & 0x1f) | 0xe0 # Don't validate; just slash off extra bits
         self.clear()
         self.spi = spidev.SpiDev()  # Init the SPI device
         self.spi.open(0, 1)  # Open SPI port 0, slave device (CS)  1
@@ -75,11 +75,14 @@ class APA102:
     def clear(self):
         # (Re-)initialize the pixel buffer.
         self.leds = []
+        import array
+        self.leds = array.array('B')
         # Allocate the entire buffer. If later some LEDs are not set, they will just be black, instead of crashing the
         # driver.
+        pixel = [self.ledstart] + [0x00] * 3
         for _ in range(self.numLEDs):
-            self.leds.extend([self.ledstart])
-            self.leds.extend([0x00] * 3)
+            self.leds.extend(pixel)
+        # self.leds = list(self.leds)
 
     """
     void setPixel(ledNum, red, green, blue)
@@ -131,7 +134,7 @@ class APA102:
     """
     def show(self):
         self.clockStartFrame()
-        self.spi.xfer2(self.leds) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
+        self.spi.xfer2(list(self.leds)) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
 
     """
     void cleanup()
