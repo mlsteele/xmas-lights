@@ -1,0 +1,6 @@
+- .git
+- status
+- *.pyc
+- *.log
+- *_BASE_*
+- *_BACKUP_*
