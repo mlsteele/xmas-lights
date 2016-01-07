@@ -1,6 +1,13 @@
-- .git
-- status
+- .rsync-filter
+- live-download.sh
+
+- webserver.py
+
 - *.pyc
 - *.log
+
+- .git
 - *_BASE_*
 - *_BACKUP_*
+- *_LOCAL_*
+- *_REMOTE_*
