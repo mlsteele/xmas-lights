@@ -1,5 +1,6 @@
 # from functools import lru_cache
 from math import sin, cos, pi
+from functools32 import lru_cache
 import yaml
 
 # source: http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
@@ -18,6 +19,11 @@ with open('geometry.yaml') as f:
 class Pixel(object):
     def __init__(self, index):
         self.index = index
+
+    def clone(self):
+        clone = Pixel(self.index)
+        clone.angle = self.angle
+        return clone
 
     # faster than @property
     def __getattr__(self, name):
@@ -48,7 +54,12 @@ class PixelStrip(object):
             index += 1
 
     @staticmethod
+    @lru_cache()
     def pixels_near_angle(angle):
+        return list(pixel.clone() for pixel in PixelStrip.pixels_near_angle_(angle))
+
+    @staticmethod
+    def pixels_near_angle_(angle):
         a0 = None
         da0 = None
         for pixel in PixelStrip.pixels():

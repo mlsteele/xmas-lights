@@ -4,3 +4,4 @@
 paho-mqtt>=1.1
 pyyaml>=3.11
 spidev>=3.0
+functools32>=3.2.3

@@ -61,9 +61,6 @@ class EveryNth(Scene):
             strip.addPixelHSV(x, 0, 0, self.v)
 
 class Sparkle(Scene):
-    def step(self):
-        pass
-
     def show(self):
         for i in xrange(PixelStrip.count):
             if random.random() > 0.999:
@@ -75,7 +72,7 @@ class SparkleFade(Scene):
 
         Args:
             interval: How often a new spark appears.
-            max_age: Maximuma age of a sparkle in seconds.
+            max_age: Maximum age of a sparkle in seconds.
             max_v: Maximum brightness.
         """
         self.interval = float(interval)
@@ -146,7 +143,7 @@ class Drips(Scene):
             b = abs(pixel.radius - self.phase)
             if b < decay:
                 b = (1 - b / decay) ** 4
-                strip.addPixelHSV(pixel.index, self.hue, 1, 1)
+                strip.addPixelHSV(pixel.index, self.hue, 1, 0.2)
 
 class Predicate(Scene):
     def __init__(self, predicate):
