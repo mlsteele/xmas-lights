@@ -126,24 +126,21 @@ class Tunnel(Scene):
 class Drips(Scene):
     def __init__(self):
         self.angle = 360 * random.random()
-        self.phase = 0
         self.hue = random.random()
-        self.phase = random.random()
+        self.radius = random.random()
 
     def step(self):
-        self.phase += 0.05
-        if self.phase > 1.1:
-            self.phase = -0.1
+        self.radius += 0.005
+        if self.radius > 1.1:
+            self.radius -= 1.2
             self.angle = 360 * random.random()
             self.hue = random.random()
 
     def show(self):
-        decay = 0.3
         for pixel in PixelStrip.pixels_near_angle(self.angle):
-            b = abs(pixel.radius - self.phase)
-            if b < decay:
-                b = (1 - b / decay) ** 4
-                strip.addPixelHSV(pixel.index, self.hue, 1, 0.2)
+            dr = abs(pixel.radius - self.radius)
+            b = (1 - dr) ** 6
+            strip.addPixelHSV(pixel.index, self.hue, 0, b)
 
 class Predicate(Scene):
     def __init__(self, predicate):
@@ -198,7 +195,7 @@ def tunnel_scene(sprites):
     sprites.append(Tunnel())
 
 def drips_scene(sprites):
-    sprites.extend(Drips() for _ in xrange(3))
+    sprites.extend(Drips() for _ in xrange(10))
 
 def game_scene(sprites):
     sprites.append(InteractiveWalk())
