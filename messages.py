@@ -1,60 +1,55 @@
-import pika
-import re, os, sys
+import paho.mqtt.client as mqtt
+import re, sys
 import json
 import logging
+import mqtt_config
 
 logging.basicConfig(level=logging.WARNING)
-logging.getLogger('pika.connection').setLevel(logging.CRITICAL)
 
 logger = logging.getLogger('messages')
 
-RABBIT_URL = os.environ.get('RABBIT_URL') or os.environ.get('CLOUDAMQP_URL')
-MESSAGE_QUEUE = 'lights'
+Messages = []
 
-if RABBIT_URL:
-    url = re.sub(r'(\/\/([^@]+@)[^:\/]+)\/', '\\1:5672/', RABBIT_URL)
-    parameters = pika.URLParameters(url)
-else:
-    parameters = pika.ConnectionParameters(host='localhost')
-parameters.socket_timeout = 5
+def on_connect(client, userdata, flags, rc):
+    logger.info("connected result code=%s", str(rc))
+    logger.info("subscribe topic=%s", mqtt_config.TOPIC)
+    client.subscribe(mqtt_config.TOPIC, 0)
 
-connection = None
-try:
-    connection = pika.BlockingConnection(parameters)
-except pika.exceptions.AMQPConnectionError as err:
-    print "Error starting rabbit:", type(err).__name__ + ':', repr(err)
-except Exception as err:
-    print "Error starting rabbit:", type(err).__name__ + ':', repr(err)
+def on_log(client, userdata, level, string):
+    logger.info("log %s %s", level, string)
 
-if connection:
-    channel = connection.channel()
-    channel.queue_declare(queue=MESSAGE_QUEUE, durable=True)
+def on_message(client, userdata, msg):
+    logger.info("message topic=%s payload=%s", msg.topic, msg.payload)
+    Messages.append(msg)
+
+def on_publish(client, userdata, rc):
+    logger.info("published result code=%s", rc)
+
+def on_disconnect(client, userdata, other):
+    logger.info("disconnected result code=%s", other)
+
+client = mqtt.Client("xmas-lights", clean_session=False)
+client.on_connect = on_connect
+client.on_message = on_message
+client.on_disconnect = on_disconnect
+client.on_publish = on_publish
+
+if mqtt_config.username:
+    client.username_pw_set(mqtt_config.username, mqtt_config.password)
+if mqtt_config.hostname:
+    client.connect(mqtt_config.hostname, 1883, 60)
+    client.loop_start()
 
 def get_message():
-    if not connection: return None
-    (frame, props, body) = channel.basic_get(queue=MESSAGE_QUEUE, no_ack=True)
-    if not frame: return None
-    logger.info("receive %s", body)
-    return json.loads(body)
-
-def publish(messageType, **payload):
-    payload['type'] = messageType
-    logger.info("publish %s", payload)
-    channel.basic_publish(
-        exchange    = '',
-        routing_key = 'lights',
-        body        = json.dumps(payload),
-        properties  = pika.BasicProperties(delivery_mode=2) # persistent
-      )
+    if not Messages: return None
+    message = Messages.pop(0)
+    logger.info("receive %s", message.payload)
+    return json.loads(message.payload)
 
 if __name__ == '__main__':
+    print 'Waiting for messages'
     logger.setLevel(logging.INFO)
-
-    if len(sys.argv) > 1:
-        # publish a test message
-        publish("action", action=sys.argv[1])
-        connection.close()
-    else:
-        print 'Waiting for messages'
-        while True:
-            get_message()
+    while True:
+        message = get_message()
+        if message:
+            print message

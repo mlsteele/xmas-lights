@@ -3,7 +3,7 @@ import flask
 from flask import Flask, abort, request, send_from_directory, abort
 from flask.ext.socketio import SocketIO, emit
 
-import messages
+from publish_message import publish
 logging.getLogger('messages').setLevel(logging.INFO)
 
 SMS_TEXT_RE = r'^(on|off|\d+)$'
@@ -33,7 +33,7 @@ def validate_token(token):
 @app.route('/ifttt', methods=['POST'])
 @validate_token(os.environ.get('IFTTT_TOKEN'))
 def ifttt():
-    messages.publish('action', action=request.form['action'])
+    publish('action', action=request.form['action'])
     return 'ok'
 
 @app.route('/slack', methods=['POST'])
@@ -49,7 +49,7 @@ def slack():
             body  = body,
         )
     else:
-        messages.publish('action', action=message)
+        publish('action', action=message)
     return flask.jsonify(text='ok')
 
 # Game server
@@ -65,7 +65,7 @@ def ctl_message(message):
         "state": bool(message.get("state")),
     }
     print payload
-    messages.publish("gamekey", **payload)
+    publish("gamekey", **payload)
 
 if __name__ == '__main__':
     socketio.run(app, use_reloader=True)

@@ -6,7 +6,8 @@ import signal
 from math import sin, cos, pi
 import json
 import apa102
-from messages import get_message, publish
+from messages import get_message
+from publish_message import publish
 from led_geometry import PixelAngle, PixelStrip
 
 strip = apa102.APA102(PixelStrip.count)
