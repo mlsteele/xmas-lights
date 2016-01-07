@@ -3,6 +3,7 @@ from math import sin, cos, pi
 import yaml
 
 # source: http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
+# This is faster than explicitly memoizing into a list or array.
 def memoize(f):
   class memodict(dict):
       __slots__ = ()
@@ -86,8 +87,8 @@ class PixelAngle(object):
     REF_ANGLES = {}
     for angle, indices in CONFIG['pixels']['angles'].items():
         angle = float(angle)
-        for index in indices:
-            REF_ANGLES[index] = angle
+        for i in indices:
+            REF_ANGLES[i] = angle
 
     @staticmethod
     @memoize
@@ -100,10 +101,10 @@ class PixelAngle(object):
             return angle
 
         keys = PixelAngle.REF_ANGLES.keys()
-        left_i = max(x for x in keys if x < i)
-        right_i = min(x for x in keys if i < x)
-        left_a, right_a = PixelAngle.REF_ANGLES[left_i], PixelAngle.REF_ANGLES[right_i]
-        if right_a <= left_a:
-            right_a += 360
-        ratio = (i - left_i) / float(right_i - left_i)
-        return (left_a * (1 - ratio) + right_a * ratio) % 360
+        i0 = max(j for j in keys if j <= i)
+        i1 = min(j for j in keys if i <= j)
+        a0, a1 = PixelAngle.REF_ANGLES[i0], PixelAngle.REF_ANGLES[i1]
+        if a1 <= a0:
+            a1 += 360
+        ratio = (i - i0) / float(i1 - i0)
+        return (a0 * (1 - ratio) + a1 * ratio) % 360

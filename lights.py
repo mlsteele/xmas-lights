@@ -108,14 +108,14 @@ class SparkleFade(Scene):
 
 class Tunnel(Scene):
     def __init__(self):
-        self.front = 350
-        self.back = (self.front + 180) % 360
-        self.bandangle = 0
-        self.bandwidth = 15
+        self.front = 350.0
+        self.back = (self.front + 180.0) % 360
+        self.band_angle = 0.0
+        self.band_width = 15.0
 
     def step(self):
-        self.bandangle += 4
-        self.bandangle %= 180
+        self.band_angle += 4
+        self.band_angle %= 180
 
         self.front += 1
         self.front %= 360
@@ -123,11 +123,8 @@ class Tunnel(Scene):
     def show(self):
         for pixel in PixelStrip.pixels():
             d = pixel.angle_from(self.front)
-            if abs(d - self.bandangle) < self.bandwidth/2.:
-                strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
-
-        # for pixel in Pixels.near_angle(self.bandangle, band_width=self.bandwidth):
-        #     strip.addPixelHSV(pixel.index, self.bandangle/90., 1, 0.2)
+            if abs(d - self.band_angle) < self.band_width / 2.0:
+                strip.addPixelHSV(pixel.index, self.band_angle / 90., 1.0, 0.2)
 
 class Drips(Scene):
     def __init__(self):
@@ -149,7 +146,7 @@ class Drips(Scene):
             b = abs(pixel.radius - self.phase)
             if b < decay:
                 b = (1 - b / decay) ** 4
-                strip.addPixelHSV(pixel.index, self.hue, 1, b/2)
+                strip.addPixelHSV(pixel.index, self.hue, 1, 1)
 
 class Predicate(Scene):
     def __init__(self, predicate):
