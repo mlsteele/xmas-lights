@@ -19,9 +19,12 @@ class Pixel(object):
     def __init__(self, index):
         self.index = index
 
-    @property
-    def angle(self):
-        return PixelAngle.angle(self.index)
+    # faster than @property
+    def __getattr__(self, name):
+        if name == "angle":
+            self.angle = PixelAngle.angle(self.index)
+            return self.angle
+        raise AttributeError(name)
 
     @property
     def radius(self):
@@ -38,9 +41,11 @@ class PixelStrip(object):
     @staticmethod
     def pixels():
         pixel = Pixel(0)
-        while pixel.index < PixelStrip.count:
+        for index, angle in enumerate(PixelAngles):
+            pixel.index = index
+            pixel.angle = angle
             yield pixel
-            pixel.index += 1
+            index += 1
 
     @staticmethod
     def pixels_near_angle(angle):
@@ -108,3 +113,5 @@ class PixelAngle(object):
             a1 += 360
         ratio = (i - i0) / float(i1 - i0)
         return (a0 * (1 - ratio) + a1 * ratio) % 360
+
+PixelAngles = list(PixelAngle.angle(i) for i in range(PixelStrip.count))
