@@ -139,3 +139,10 @@ class APA102:
     """
     def cleanup(self):
         self.spi.close()  # ... SPI Port schliessen
+
+    def reverse(self):
+        src = self.leds
+        self.leds = dst = []
+        srclen = len(src)
+        for i in range(srclen, 0, -4):
+            dst.extend(src[i-4:i])
