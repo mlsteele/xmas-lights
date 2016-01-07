@@ -373,6 +373,8 @@ print "Starting."
 frame_deltas = []
 Spinning = False
 SpinCount = 0
+last_frame_printed_t = time.time()
+
 try:
     last_frame_t = time.time()
     ideal_frame_delta_t = 1.0 / 60
@@ -387,8 +389,11 @@ try:
         delta_t = frame_t - last_frame_t
         frame_deltas.append(delta_t)
         if len(frame_deltas) > 60:
-            frame_deltas.pop()
-        if args.print_frame_rate: print "Frame rate:", 1 / (sum(frame_deltas) / len(frame_deltas))
+            frame_deltas.pop(0)
+        if args.print_frame_rate:
+            if frame_t - (last_frame_printed_t or frame_t) > 1:
+                print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
+                last_frame_printed_t = frame_t
         if delta_t < ideal_frame_delta_t:
             if FrameMode != 'slave':
                 time.sleep(ideal_frame_delta_t - delta_t)
