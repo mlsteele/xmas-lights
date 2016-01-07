@@ -75,14 +75,11 @@ class APA102:
     def clear(self):
         # (Re-)initialize the pixel buffer.
         self.leds = []
-        import array
-        self.leds = array.array('B')
         # Allocate the entire buffer. If later some LEDs are not set, they will just be black, instead of crashing the
         # driver.
         pixel = [self.ledstart] + [0x00] * 3
         for _ in range(self.numLEDs):
             self.leds.extend(pixel)
-        # self.leds = list(self.leds)
 
     """
     void setPixel(ledNum, red, green, blue)
@@ -134,7 +131,7 @@ class APA102:
     """
     def show(self):
         self.clockStartFrame()
-        self.spi.xfer2(list(self.leds)) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
+        self.spi.xfer2(self.leds) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
 
     """
     void cleanup()
