@@ -15,7 +15,7 @@ strip = apa102.APA102(PixelStrip.count)
 def bound(x):
     return x % PixelStrip.count
 
-class Scene(object):
+class Sprite(object):
     def handle_game_keys(self, keys):
         pass
 
@@ -25,7 +25,7 @@ class Scene(object):
     def show(self):
         raise NotImplementedError
 
-class Snake(Scene):
+class Snake(Sprite):
     def __init__(self, head=0, speed=1, brightness=0.5):
         self.head = int(head)
         self.head_f = float(int(head))
@@ -43,8 +43,8 @@ class Snake(Scene):
             h, s, v = 0.5 * (self.hue_offset+self.head+i) / PixelStrip.count, 1, self.brightness * i / self.length
             strip.addPixelHSV(bound(self.head + i), h, s, v)
 
-class EveryNth(Scene):
-    def __init__(self, speed=1, factor=0.02, v=0.5):
+class EveryNth(Sprite):
+    def __init__(self, speed=0.25, factor=0.02, v=0.5):
         self.num = int(PixelStrip.count * factor)
         self.skip = int(PixelStrip.count / self.num)
         self.speed = speed
@@ -60,13 +60,13 @@ class EveryNth(Scene):
             x = bound(int(self.offset + self.skip * i))
             strip.addPixelHSV(x, 0, 0, self.v)
 
-class Sparkle(Scene):
+class Sparkle(Sprite):
     def show(self):
         for i in xrange(PixelStrip.count):
             if random.random() > 0.999:
                 strip.addPixelHSV(i, random.random(), 0.3, random.random())
 
-class SparkleFade(Scene):
+class SparkleFade(Sprite):
     def __init__(self, interval=0.01, max_age=.8, max_v=0.5):
         """Sparkles that fade over time.
 
@@ -103,7 +103,7 @@ class SparkleFade(Scene):
             v = v_factor * self.max_v
             strip.addPixelHSV(i, 0, 0.0, v)
 
-class Tunnel(Scene):
+class Tunnel(Sprite):
     def __init__(self):
         self.front = 350.0
         self.back = (self.front + 180.0) % 360
@@ -123,7 +123,7 @@ class Tunnel(Scene):
             if abs(d - self.band_angle) < self.band_width / 2.0:
                 strip.addPixelHSV(pixel.index, self.band_angle / 90., 1.0, 0.2)
 
-class Drips(Scene):
+class Drips(Sprite):
     def __init__(self):
         self.angle = 360 * random.random()
         self.hue = random.random()
@@ -142,7 +142,7 @@ class Drips(Scene):
             b = (1 - dr) ** 6
             strip.addPixelHSV(pixel.index, self.hue, 0, b)
 
-class Predicate(Scene):
+class Predicate(Sprite):
     def __init__(self, predicate):
         self.f = predicate
 
@@ -151,7 +151,7 @@ class Predicate(Scene):
             if self.f(i):
                 strip.addPixelHSV(i, 0, 0, 0.04)
 
-class InteractiveWalk(Scene):
+class InteractiveWalk(Sprite):
     def __init__(self):
         self.pos = 124
         self.radius = 3
