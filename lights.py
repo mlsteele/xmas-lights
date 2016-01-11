@@ -107,9 +107,27 @@ class Mode(Sprite):
         if self.current_child:
             self.current_child.render(strip)
 
+class SlaveMode(Sprite):
+    def __init__(self):
+        self.pixels = None
+
+    def next_scene(self):
+        pass
+
+    def step(self):
+        pass
+
+    def render(self, strip):
+        if not self.pixels:
+            return
+        strip.clear()
+        strip.leds = self.pixels
+        self.pixels = None
+
 empty_mode   = Mode()
 attract_mode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
 game_mode    = Mode({game_scene()})
+slave_mode   = SlaveMode()
 
 current_mode = attract_mode
 
@@ -171,11 +189,8 @@ def handle_message():
     elif messageType == "ping":
         print "pong"
     elif messageType == "pixels":
-        select_mode(slave_mode, "game mode on")
-        # print 'switch to mode', frame_mode
-        frame_mode = 'slave'
-        global LEDState
-        LEDState = json.loads(str(message["leds"]))
+        select_mode(slave_mode, "slave mode")
+        slave_mode.pixels = json.loads(str(message["leds"]))
     elif messageType == "gamekey":
         frame_mode = 'default'
         select_mode(game_mode, "game mode on")
@@ -234,13 +249,6 @@ def main(args):
         if args.master:
             publish("pixels", leds=json.dumps(strip.leds))
 
-def do_slave_frame():
-    global LEDState
-    if not LEDState: return
-    strip.clear()
-    strip.leds = LEDState
-    LEDState = None
-
 def do_scenes_frame():
     strip.clear()
     current_mode.render(strip)
@@ -250,7 +258,6 @@ def do_stopped_frame():
     pass
 
 frame_modeFunctions = {
-    'slave'  : do_slave_frame,
     'scenes' : do_scenes_frame,
     'stopped': do_stopped_frame,
 }
