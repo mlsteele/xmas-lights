@@ -180,6 +180,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
 parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
+parser.add_argument('--sprite', dest='sprite', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
@@ -193,6 +194,16 @@ if args.scene:
     except NameError:
         print >> sys.stderr, "Unknown scene:", args.scene
         exit(1)
+    select_mode({scene})
+
+if args.sprite:
+    sprite = None
+    try:
+        sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
+    except NameError:
+        print >> sys.stderr, "Unknown sprite:", args.sprite
+        exit(1)
+    scene = make_sprite_scene(sprite)
     select_mode({scene})
 
 def do_slave_frame():
