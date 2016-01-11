@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import time
+import types
 import random
 import json
 import apa102
@@ -11,37 +12,44 @@ from sprites import *
 
 strip = apa102.APA102(PixelStrip.count)
 
-sprites = []
+## Scenes
+##
 
-def empty_scene(sprites):
-    pass
+def empty_scene():
+    return []
 
-def multi_scene(sprites):
-    N_SNAKES = 15
-    sprites.extend(Snake(head=i*(PixelStrip.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+def multi_scene():
+    snakeCount = 15
+    sprites = []
+    sprites.extend(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
+    return sprites
 
-def snakes_scene(sprites):
-    N_SNAKES = 15
-    sprites.extend(Snake(head=i*(PixelStrip.count / float(N_SNAKES)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in xrange(N_SNAKES))
+def snakes_scene():
+    snakeCount = 15
+    return (Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
 
-def nth_scene(sprites):
-    sprites.append(EveryNth(factor=0.1))
-    sprites.append(EveryNth(factor=0.101))
+def nth_scene():
+    return [
+        EveryNth(factor=0.1),
+        EveryNth(factor=0.101)
+    ]
 
-def sparkle_scene(sprites):
-    sprites.append(Sparkle())
-    sprites.append(SparkleFade())
+def sparkle_scene():
+    return [Sparkle, SparkleFade]
 
-def tunnel_scene(sprites):
-    sprites.append(Tunnel())
+def tunnel_scene():
+    return Tunnel
 
-def drips_scene(sprites):
-    sprites.extend(Drips() for _ in xrange(10))
+def drips_scene():
+    return (Drips for _ in range(10))
 
-def game_scene(sprites):
-    sprites.append(InteractiveWalk())
+def game_scene():
+    return InteractiveWalk
+
+## Modes
+##
 
 EmptyMode   = {empty_scene}
 AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
@@ -58,18 +66,28 @@ CurrentScene = None
 FrameCount = 0
 
 def select_another_scene():
-    global sprites
+    global Sprites
     global CurrentScene
     # choose a different scene than the current one
     otherScenes = CurrentMode - {CurrentScene}
     # if the mode has only one scene, don't change it
     if not otherScenes:
         return
+
     scene = random.choice(list(otherScenes))
     print 'selecting', scene.__name__
     CurrentScene = scene
-    sprites = []
-    scene(sprites)
+
+    def makeSprite(sprite):
+        if isinstance(sprite, type):
+            print 'make', sprite
+            sprite = sprite()
+        return sprite
+    sprites = scene()
+    import collections
+    if not isinstance(sprites, collections.Sequence):
+        sprites = [sprites]
+    Sprites = map(makeSprite, sprites)
 
     global FrameCount
     FrameCount = 400 + random.randrange(400)
@@ -189,7 +207,7 @@ def do_scenes_frame():
 
     strip.clear()
 
-    for sprite in sprites:
+    for sprite in Sprites:
         sprite.render(strip)
         sprite.step()
 
