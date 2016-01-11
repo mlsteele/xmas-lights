@@ -29,12 +29,12 @@ class Scene(Sprite):
         self.name = self.children[0].__class__.__name__ if self.children else 'empty'
 
     def step(self):
-        for sprite in self.children:
-            sprite.step()
+        for child in self.children:
+            child.step()
 
     def render(self, strip):
-        for sprite in self.children:
-            sprite.render(strip)
+        for child in self.children:
+            child.render(strip)
 
 def make_sprite_scene(*sprites):
     def fn():
@@ -76,27 +76,42 @@ game_scene = make_sprite_scene(InteractiveWalk)
 ## Modes
 ##
 
-FrameCount = 0
 CurrentScene = None
 
-def select_another_scene():
-    global CurrentScene
-    # choose a different scene than the current one
-    otherScenes = CurrentMode - {CurrentScene}
-    # if the mode has only one scene, don't change it
-    if not otherScenes:
-        return
+# A mode is a sprite that iterates through child sprites.
+class Mode(Sprite):
+    def __init__(self, children={}):
+        self.children = set(children)
+        self.current_child = None
+        self.remaining_frames = 0
 
-    scene = random.choice(list(otherScenes))
-    print 'selecting', scene.name
-    CurrentScene = scene
+    def next_scene(self):
+        # choose a different child than the current one
+        others = self.children - {self.current_child}
+        # if the mode has only one scene, don't change it
+        if not others:
+            return
 
-    global FrameCount
-    FrameCount = 400 + random.randrange(400)
+        child = random.choice(list(others))
+        print 'selecting', child.name
+        self.current_child = child
 
-EmptyMode   = {empty_scene()}
-AttractMode = {multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()}
-GameMode    = {game_scene()}
+        self.remaining_frames = 400 + random.randrange(400)
+
+    def step(self):
+        self.remaining_frames -= 1
+        if self.remaining_frames <= 0:
+            self.next_scene()
+        if self.current_child:
+            self.current_child.step()
+
+    def render(self, strip):
+        if self.current_child:
+            self.current_child.render(strip)
+
+EmptyMode   = Mode()
+AttractMode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
+GameMode    = Mode({game_scene()})
 
 Modes = {
     'empty'  : EmptyMode,
@@ -106,14 +121,14 @@ Modes = {
 
 CurrentMode = AttractMode
 
-def select_mode(sceneSet, switchMessage=None):
-    global CurrentMode, CurrentScene
-    if CurrentMode == sceneSet:
+# Select mode, and print message if the mode has changed.
+def select_mode(mode, switchMessage=None):
+    global CurrentMode
+    if CurrentMode == mode:
         return False
     print switchMessage
-    CurrentMode = sceneSet
-    CurrentScene = None
-    select_another_scene()
+    CurrentMode = mode
+    CurrentMode.next_scene()
     return True
 
 # Playing with angles.
@@ -128,12 +143,12 @@ def handle_action(message):
     global CurrentMode, Modes, FrameMode, SpinCount
     action = message["action"]
     if action == "next":
-        print "Advancing to next scene."
-        select_another_scene()
+        print "Advancing to the next scene."
+        CurrentMode.next_scene()
     elif action == "toggle":
         if not select_mode(EmptyMode, "toggle: off"):
             select_mode(AttractMode, "toggle: on")
-        select_another_scene()
+        CurrentMode.next_scene()
     elif action == "off":
         print 'off'
         FrameMode = 'stopped'
@@ -184,7 +199,7 @@ def handle_message():
             }
             gamekeys[key] = bool(state)
             print gamekeys
-            CurrentScene.handle_game_keys(gamekeys)
+            GameMode.children[0].handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
     return True
@@ -201,23 +216,22 @@ args = parser.parse_args()
 
 import sys
 if args.scene:
-    scene = None
     try:
-        scene = eval(args.scene + '_scene')
+        scenefn = eval(args.scene + '_scene')
     except NameError:
         print >> sys.stderr, "Unknown scene:", args.scene
         exit(1)
-    select_mode({scene})
+    scene = scenefn()
+    select_mode(Mode({scene}))
 
 if args.sprite:
-    sprite = None
     try:
         sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
     except NameError:
         print >> sys.stderr, "Unknown sprite:", args.sprite
         exit(1)
-    scene = make_sprite_scene(sprite)
-    select_mode({scene})
+    scene = Scene(sprite)
+    select_mode(Mode({scene}))
 
 def do_slave_frame():
     global LEDState
@@ -227,16 +241,9 @@ def do_slave_frame():
     LEDState = None
 
 def do_scenes_frame():
-    global FrameCount
-
-    FrameCount -= 1
-    if FrameCount <= 0:
-        select_another_scene()
-
     strip.clear()
-
-    CurrentScene.render(strip)
-    CurrentScene.step()
+    CurrentMode.render(strip)
+    CurrentMode.step()
 
 def do_stopped_frame():
     pass
