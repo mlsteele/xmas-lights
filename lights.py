@@ -32,42 +32,30 @@ class Scene(Sprite):
         for child in self.children:
             child.render(strip)
 
-def make_sprite_scene(*sprites):
-    def fn():
-        scene = Scene(sprites)
-        scene.name = sprites[0].__name__
-        return scene
-    return fn
-
-def empty_scene():
-    return Scene()
-
-def multi_scene():
+def make_multi_scene():
     snakeCount = 15
     sprites = list(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
     return Scene(sprites)
 
-def snakes_scene():
+def make_snakes_scene():
     snakeCount = 15
     return Scene(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
 
-def nth_scene():
-    return Scene([
-        EveryNth(factor=0.1),
-        EveryNth(factor=0.101)
-    ])
+multi_scene = make_multi_scene()
 
-def sparkle_scene():
-    return Scene([Sparkle, SparkleFade])
+snakes_scene = make_snakes_scene()
 
-tunnel_scene = make_sprite_scene(Tunnel)
+nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
 
-def drips_scene():
-    return Scene(Drips for _ in range(10))
+sparkle_scene = Scene([Sparkle, SparkleFade])
 
-game_scene = make_sprite_scene(InteractiveWalk)
+tunnel_scene = Scene(Tunnel)
+
+drips_scene = Scene(Drips for _ in range(10))
+
+game_scene = Scene(InteractiveWalk)
 
 ## Modes
 ##
@@ -125,8 +113,8 @@ class SlaveMode(Sprite):
         self.pixels = None
 
 empty_mode   = Mode()
-attract_mode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
-game_mode    = Mode({game_scene()})
+attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene})
+game_mode    = Mode({game_scene})
 slave_mode   = SlaveMode()
 
 current_mode = attract_mode
@@ -218,17 +206,20 @@ def main(args):
 
     if args.scene:
         try:
-            scenefn = eval(args.scene + '_scene')
+            scene = eval(args.scene + '_scene')
         except NameError:
+            scene = None
+        if not isinstance(scene, Scene):
             print >> sys.stderr, "Unknown scene:", args.scene
             exit(1)
-        scene = scenefn()
         select_mode(Mode({scene}))
 
     if args.sprite:
         try:
             sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
         except NameError:
+            sprite = None
+        if not isinstance(scene, Sprite):
             print >> sys.stderr, "Unknown sprite:", args.sprite
             exit(1)
         scene = Scene(sprite)
