@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import collections, json, os, random, sys, time, types
+import collections, json, logging, os, random, sys, time, types
 import apa102
 from messages import get_message
 from publish_message import publish
@@ -203,6 +203,7 @@ def handle_message():
 
 import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
+parser.add_argument('--debug-messages', dest='debug_messages', action='store_true')
 parser.add_argument('--pygame', dest='pygame', action='store_true')
 parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
@@ -232,6 +233,9 @@ def main(args):
             exit(1)
         scene = Scene(sprite)
         select_mode(Mode({scene}))
+
+    if args.debug_messages:
+        logging.getLogger('messages').setLevel(logging.INFO)
 
     while True:
         if not args.master:
