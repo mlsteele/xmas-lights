@@ -60,8 +60,6 @@ game_scene = Scene(InteractiveWalk)
 ## Modes
 ##
 
-CurrentScene = None
-
 # A mode is a sprite that iterates through child sprites.
 class Mode(Sprite):
     def __init__(self, children={}):
@@ -112,7 +110,6 @@ class SlaveMode(Sprite):
         strip.leds = self.pixels
         self.pixels = None
 
-empty_mode   = Mode()
 attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene})
 game_mode    = Mode({game_scene})
 slave_mode   = SlaveMode()
@@ -143,9 +140,7 @@ def handle_action(message):
         frame_modifiers -= set(['stop', 'off'])
         current_mode.next_scene()
     elif action == "toggle":
-        if not select_mode(empty_mode, "toggle: off"):
-            select_mode(attract_mode, "toggle: on")
-        current_mode.next_scene()
+        frame_modifiers ^= set(['off'])
     elif action in ["off", "stop"]:
         print action
         frame_modifiers.add(action)
@@ -219,11 +214,12 @@ def main(args):
             sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
         except NameError:
             sprite = None
-        if not isinstance(scene, Sprite):
+        if not isinstance(sprite, (type, types.ClassType)) or not issubclass(sprite, Sprite):
             print >> sys.stderr, "Unknown sprite:", args.sprite
             exit(1)
         scene = Scene(sprite)
         select_mode(Mode({scene}))
+        print current_mode
 
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
