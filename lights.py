@@ -120,6 +120,13 @@ def select_mode(mode, switchMessage=None):
     current_mode.next_scene()
     return True
 
+def change_speed_by(factor):
+    global speed
+    speed *= factor
+    if abs(speed - 1.0) < 0.01:
+        speed = 1.0
+    print 'set speed to', speed
+
 # Playing with angles.
 # angle_offset = lambda: time.time() * 45 % 360
 # angle_offset = lambda: sin(time.time()) * 55
@@ -129,23 +136,25 @@ def select_mode(mode, switchMessage=None):
 def handle_action(message):
     global current_mode, frame_modifiers, spin_count
     action = message["action"]
+    print 'action', action
     if action == "next":
-        print "Advancing to the next scene."
         frame_modifiers -= set(['stop', 'off'])
         current_mode.next_scene()
     elif action == "toggle":
         frame_modifiers ^= set(['off'])
     elif action in ["off", "stop"]:
-        print action
         frame_modifiers.add(action)
     elif action in ["start", "resume", "on"]:
-        print 'start'
         frame_modifiers -= set(['stop', 'off'])
     elif action == "reverse":
         frame_modifiers.add('reverse')
     elif action == "spin":
         frame_modifiers.add('spin')
         spin_count = 0
+    elif action == "faster":
+        change_speed_by(1.5)
+    elif action == "slower":
+        change_speed_by(1 / 1.5)
     else:
         print "unknown message:", action
 
@@ -213,7 +222,6 @@ def main(args):
             exit(1)
         scene = Scene(sprite)
         select_mode(Mode({scene}))
-        print current_mode
 
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
@@ -235,6 +243,7 @@ frame_modifiers = set()
 spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
+speed = 1.0
 last_frame_t = time.time()
 synthetic_time = 0
 
@@ -247,7 +256,7 @@ def do_frame(options):
     if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
         current_mode.step()
         current_mode.render(strip, synthetic_time)
-        synthetic_time += IDEAL_FRAME_DELTA_T
+        synthetic_time += IDEAL_FRAME_DELTA_T * speed
 
     # Apply modifiers
     if 'spin' in frame_modifiers:
@@ -257,6 +266,16 @@ def do_frame(options):
             frame_modifiers.discard('spin')
     if 'reverse' in frame_modifiers:
         strip.reverse()
+    if 'invert' in frame_modifiers:
+        for i in range(len(strip.leds)):
+            if i % 4:
+                # strip.leds[i] = 16 - strip.leds[i] * 16 / 256
+                strip.leds[i] = 255 - strip.leds[i]
+            else:
+                strip.leds[i] = 0xe0 | 1
+    for i in range(len(strip.leds)):
+        if i % 4 is 0:
+            strip.leds[i] = 0xe7
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t
@@ -273,7 +292,8 @@ def do_frame(options):
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
         if current_mode != slave_mode:
-            time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
+            pass
+            # time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print "Frame lagging. Time to optimize."
 

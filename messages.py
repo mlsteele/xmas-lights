@@ -37,6 +37,7 @@ if mqtt_config.hostname:
     try:
         client.connect(mqtt_config.hostname, 1883, 60)
         client.loop_start()
+        print 'subscribed to', mqtt_config.hostname
     except socket.error as err:
         print >> sys.stderr, 'MQTT:', err
         print >> sys.stderr, 'Continuing without subscriptions'
