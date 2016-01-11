@@ -77,7 +77,7 @@ CurrentScene = None
 # A mode is a sprite that iterates through child sprites.
 class Mode(Sprite):
     def __init__(self, children={}):
-        self.children = set(children)
+        self.children = frozenset(children)
         self.current_child = None
         if len(self.children) == 1:
             self.child = list(self.children)[0]
@@ -148,43 +148,36 @@ def select_mode(mode, switchMessage=None):
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
 
 def handle_action(message):
-    global current_mode, frame_mode, spin_count
+    global current_mode, frame_modifiers, spin_count
     action = message["action"]
     if action == "next":
         print "Advancing to the next scene."
+        frame_modifiers -= set(['stop', 'off'])
         current_mode.next_scene()
     elif action == "toggle":
         if not select_mode(empty_mode, "toggle: off"):
             select_mode(attract_mode, "toggle: on")
         current_mode.next_scene()
-    elif action == "off":
-        print 'off'
-        frame_mode = 'stopped'
-        strip.clear()
-    elif action == "stop":
-        print 'stop'
-        frame_mode = 'stopped'
+    elif action in ["off", "stop"]:
+        print action
+        frame_modifiers.add(action)
     elif action in ["start", "resume", "on"]:
         print 'start'
-        frame_mode = 'scenes'
+        frame_modifiers -= set(['stop', 'off'])
     elif action == "reverse":
-        frame_modifiers['reverse'] = True
+        frame_modifiers.add('reverse')
     elif action == "spin":
-        frame_modifiers['spin'] = True
+        frame_modifiers.add('spin')
         spin_count = 0
     else:
         print "unknown message:", action
 
-frame_mode = 'scenes'
-
 def handle_message():
-    global frame_mode
     message = get_message()
     if not message: return False
 
     messageType = message["type"]
     if messageType == "action":
-        frame_mode = 'scenes'
         handle_action(message)
     elif messageType == "ping":
         print "pong"
@@ -192,7 +185,7 @@ def handle_message():
         select_mode(slave_mode, "slave mode")
         slave_mode.pixels = json.loads(str(message["leds"]))
     elif messageType == "gamekey":
-        frame_mode = 'default'
+        frame_modifiers -= set(['stop', 'off'])
         select_mode(game_mode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
@@ -249,22 +242,9 @@ def main(args):
         if args.master:
             publish("pixels", leds=json.dumps(strip.leds))
 
-def do_scenes_frame():
-    strip.clear()
-    current_mode.render(strip)
-    current_mode.step()
-
-def do_stopped_frame():
-    pass
-
-frame_modeFunctions = {
-    'scenes' : do_scenes_frame,
-    'stopped': do_stopped_frame,
-}
-
 print "Starting."
 frame_deltas = [] # FIFO of the last 60 frame latencies
-frame_modifiers = dict(spin=False, reverse=False)
+frame_modifiers = set()
 spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
@@ -287,20 +267,24 @@ def do_frame(options):
             last_frame_printed_t = frame_t
 
     # Render the current frame
-    frame_modeFunctions[frame_mode]()
+    if 'stop' not in frame_modifiers:
+        strip.clear()
+    if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
+        current_mode.render(strip)
+        current_mode.step()
 
     # Apply modifiers
-    if frame_modifiers['spin']:
+    if 'spin' in frame_modifiers:
         strip.leds = strip.leds[spin_count:] + strip.leds[:spin_count]
         spin_count += 3 * 4
         if spin_count >= 450:
-            frame_modifiers['spin'] = False
-    if frame_modifiers['reverse']:
+            frame_modifiers.discard('spin')
+    if 'reverse' in frame_modifiers:
         strip.reverse()
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if frame_mode != 'slave':
+        if current_mode != slave_mode:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print "Frame lagging. Time to optimize."
