@@ -1,9 +1,14 @@
-import sys, pygame
+import os, sys
 from math import sin, cos, pi
 from led_geometry import PixelStrip
 
 class SpiDev:
     def open(self, port, slave):
+        self.pygame = None
+        if not os.environ.get('SPIDEV_PYGAME'):
+            return
+        import pygame
+        self.pygame = pygame
         pygame.init()
         self.width = 600
         self.screen = pygame.display.set_mode((self.width, self.width))
@@ -14,8 +19,12 @@ class SpiDev:
         pass
 
     def xfer2(self, values):
+        pygame = self.pygame
+        if not pygame:
+            return
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: sys.exit()
+            if event.type == pygame.QUIT:
+                sys.exit()
 
         spacing = 10
         led_size = 5

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import collections, json, random, sys, time, types
+import collections, json, os, random, sys, time, types
 import apa102
 from messages import get_message
 from publish_message import publish
@@ -202,6 +202,7 @@ def handle_message():
 
 import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
+parser.add_argument('--pygame', dest='pygame', action='store_true')
 parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
 parser.add_argument('--sprite', dest='sprite', type=str)
@@ -209,6 +210,10 @@ parser.add_argument('--warn', dest='warn', action='store_true', help='warn on sl
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
 def main(args):
+    # FIXME would need to preceed `import apa102` to have an effect
+    if args.pygame:
+        os.environ['SPIDEV_PYGAME'] = '1'
+
     if args.scene:
         try:
             scenefn = eval(args.scene + '_scene')
