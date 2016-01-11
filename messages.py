@@ -1,14 +1,11 @@
+import collections, json, logging, re, socket, sys
 import paho.mqtt.client as mqtt
-import re, sys
-import json
-import logging
-import socket
 import mqtt_config
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('messages')
 
-Messages = []
+messages = collections.deque()
 
 def on_connect(client, userdata, flags, rc):
     logger.info("connected result code=%s", str(rc))
@@ -19,8 +16,8 @@ def on_log(client, userdata, level, string):
     logger.info("log %s %s", level, string)
 
 def on_message(client, userdata, msg):
-    logger.info("message topic=%s payload=%s", msg.topic, msg.payload)
-    Messages.append(msg)
+    logger.info("message topic=%s timestamp=%s payload=%s", msg.topic, msg.timestamp, msg.payload)
+    messages.append(msg)
 
 def on_publish(client, userdata, rc):
     logger.info("published result code=%s", rc)
@@ -45,8 +42,9 @@ if mqtt_config.hostname:
         print >> sys.stderr, 'Continuing without subscriptions'
 
 def get_message():
-    if not Messages: return None
-    message = Messages.pop(0)
+    if not messages:
+        return None
+    message = messages.popleft()
     logger.info("receive %s", message.payload)
     return json.loads(message.payload)
 
