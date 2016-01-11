@@ -1,12 +1,17 @@
 from urlparse import urlparse
 import os
 
-MQTT_URL = os.environ.get('MQTT_URL') or os.environ.get('CLOUDMQTT_URL') or os.environ.get('CLOUDAMQP_URL')
+MQTT_ENV_VARS = ['MQTT_URL', 'CLOUDMQTT_URL', 'CLOUDAMQP_URL']
+MQTT_URL = next(value for value in (os.environ.get(name) for name in MQTT_ENV_VARS) if value) or "mqtt://localhost"
 
 TOPIC = 'xmas-lights'
 
+hostname = None
+username = None
+password = None
+
 if MQTT_URL:
-    url = urlparse(MQTT_URL or "mqtt://localhost")
+    url = urlparse(MQTT_URL)
 
     hostname = url.hostname
     username = url.username
@@ -14,7 +19,6 @@ if MQTT_URL:
 
     if url.path:
         username = url.path[1:] + ':' + username
-else:
-    hostname = None
-    username = None
-    password = None
+
+    auth = dict(username=username, password=password)
+    port = 1883

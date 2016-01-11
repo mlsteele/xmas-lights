@@ -154,6 +154,8 @@ def handle_message():
     if messageType == "action":
         FrameMode = 'scenes'
         handle_action(message)
+    elif messageType == "ping":
+        print "pong"
     elif messageType == "pixels":
         # print 'switch to mode', FrameMode
         FrameMode = 'slave'

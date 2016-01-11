@@ -5,7 +5,6 @@ import logging
 import mqtt_config
 
 logging.basicConfig(level=logging.WARNING)
-
 logger = logging.getLogger('messages')
 
 Messages = []
@@ -34,9 +33,9 @@ client.on_message = on_message
 client.on_disconnect = on_disconnect
 client.on_publish = on_publish
 
-if mqtt_config.username:
-    client.username_pw_set(mqtt_config.username, mqtt_config.password)
 if mqtt_config.hostname:
+    if mqtt_config.username:
+        client.username_pw_set(mqtt_config.username, mqtt_config.password)
     client.connect(mqtt_config.hostname, 1883, 60)
     client.loop_start()
 
