@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import re, sys
 import json
 import logging
+import socket
 import mqtt_config
 
 logging.basicConfig(level=logging.WARNING)
@@ -36,8 +37,12 @@ client.on_publish = on_publish
 if mqtt_config.hostname:
     if mqtt_config.username:
         client.username_pw_set(mqtt_config.username, mqtt_config.password)
-    client.connect(mqtt_config.hostname, 1883, 60)
-    client.loop_start()
+    try:
+        client.connect(mqtt_config.hostname, 1883, 60)
+        client.loop_start()
+    except socket.error as err:
+        print >> sys.stderr, 'MQTT:', err
+        print >> sys.stderr, 'Continuing without subscriptions'
 
 def get_message():
     if not Messages: return None

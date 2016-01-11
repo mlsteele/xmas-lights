@@ -2,7 +2,7 @@ from urlparse import urlparse
 import os
 
 MQTT_ENV_VARS = ['MQTT_URL', 'CLOUDMQTT_URL', 'CLOUDAMQP_URL']
-MQTT_URL = next(value for value in (os.environ.get(name) for name in MQTT_ENV_VARS) if value) or "mqtt://localhost"
+MQTT_URL = next((value for value in (os.environ.get(name) for name in MQTT_ENV_VARS) if value), "mqtt://localhost")
 
 TOPIC = 'xmas-lights'
 
