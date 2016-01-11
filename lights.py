@@ -28,9 +28,9 @@ class Scene(Sprite):
         for child in self.children:
             child.step()
 
-    def render(self, strip):
+    def render(self, strip, t):
         for child in self.children:
-            child.render(strip)
+            child.render(strip, t)
 
 def make_multi_scene():
     snakeCount = 15
@@ -44,17 +44,11 @@ def make_snakes_scene():
     return Scene(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
 
 multi_scene = make_multi_scene()
-
 snakes_scene = make_snakes_scene()
-
 nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
-
 sparkle_scene = Scene([Sparkle, SparkleFade])
-
 tunnel_scene = Scene(Tunnel)
-
 drips_scene = Scene(Drips for _ in range(10))
-
 game_scene = Scene(InteractiveWalk)
 
 ## Modes
@@ -89,9 +83,9 @@ class Mode(Sprite):
         if self.current_child:
             self.current_child.step()
 
-    def render(self, strip):
+    def render(self, strip, t):
         if self.current_child:
-            self.current_child.render(strip)
+            self.current_child.render(strip, t)
 
 class SlaveMode(Sprite):
     def __init__(self):
@@ -103,7 +97,7 @@ class SlaveMode(Sprite):
     def step(self):
         pass
 
-    def render(self, strip):
+    def render(self, strip, t):
         if not self.pixels:
             return
         strip.clear()
@@ -241,9 +235,10 @@ spin_count = 0
 IDEAL_FRAME_DELTA_T = 1.0 / 60
 last_frame_t = time.time()
 last_frame_printed_t = time.time()
+synthetic_time = 0
 
 def do_frame(options):
-    global last_frame_t, last_frame_printed_t, spin_count
+    global last_frame_t, last_frame_printed_t, spin_count, synthetic_time
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t
@@ -261,8 +256,9 @@ def do_frame(options):
     if 'stop' not in frame_modifiers:
         strip.clear()
     if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
-        current_mode.render(strip)
         current_mode.step()
+        current_mode.render(strip, synthetic_time)
+        synthetic_time += IDEAL_FRAME_DELTA_T
 
     # Apply modifiers
     if 'spin' in frame_modifiers:
