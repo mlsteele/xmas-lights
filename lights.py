@@ -218,6 +218,7 @@ def main(args):
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
 
+    print "Starting."
     while True:
         if not args.master:
             handle_message()
@@ -227,30 +228,18 @@ def main(args):
         if args.master:
             publish("pixels", leds=json.dumps(strip.leds))
 
-print "Starting."
+last_frame_printed_t = time.time()
 frame_deltas = [] # FIFO of the last 60 frame latencies
+
 frame_modifiers = set()
 spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
 last_frame_t = time.time()
-last_frame_printed_t = time.time()
 synthetic_time = 0
 
 def do_frame(options):
     global last_frame_t, last_frame_printed_t, spin_count, synthetic_time
-
-    frame_t = time.time()
-    delta_t = frame_t - last_frame_t
-
-    # Reprt the running average frame rate
-    frame_deltas.append(delta_t)
-    if len(frame_deltas) > 60:
-        frame_deltas.pop(0)
-    if options.print_frame_rate:
-        if frame_t - (last_frame_printed_t or frame_t) > 1:
-            print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
-            last_frame_printed_t = frame_t
 
     # Render the current frame
     if 'stop' not in frame_modifiers:
@@ -268,6 +257,18 @@ def do_frame(options):
             frame_modifiers.discard('spin')
     if 'reverse' in frame_modifiers:
         strip.reverse()
+
+    frame_t = time.time()
+    delta_t = frame_t - last_frame_t
+
+    # Reprt the running average frame rate
+    frame_deltas.append(delta_t)
+    if len(frame_deltas) > 60:
+        frame_deltas.pop(0)
+    if options.print_frame_rate:
+        if frame_t - (last_frame_printed_t or frame_t) > 1:
+            print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
+            last_frame_printed_t = frame_t
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
