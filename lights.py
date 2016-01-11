@@ -107,20 +107,20 @@ class Mode(Sprite):
         if self.current_child:
             self.current_child.render(strip)
 
-EmptyMode   = Mode()
-AttractMode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
-GameMode    = Mode({game_scene()})
+empty_mode   = Mode()
+attract_mode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
+game_mode    = Mode({game_scene()})
 
-CurrentMode = AttractMode
+current_mode = attract_mode
 
 # Select mode, and print message if the mode has changed.
 def select_mode(mode, switchMessage=None):
-    global CurrentMode
-    if CurrentMode == mode:
+    global current_mode
+    if current_mode == mode:
         return False
     print switchMessage
-    CurrentMode = mode
-    CurrentMode.next_scene()
+    current_mode = mode
+    current_mode.next_scene()
     return True
 
 # Playing with angles.
@@ -129,57 +129,56 @@ def select_mode(mode, switchMessage=None):
 # angle_width = lambda: 10
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
 
-LEDState = None
-
 def handle_action(message):
-    global CurrentMode, FrameMode, SpinCount
+    global current_mode, frame_mode, spin_count
     action = message["action"]
     if action == "next":
         print "Advancing to the next scene."
-        CurrentMode.next_scene()
+        current_mode.next_scene()
     elif action == "toggle":
-        if not select_mode(EmptyMode, "toggle: off"):
-            select_mode(AttractMode, "toggle: on")
-        CurrentMode.next_scene()
+        if not select_mode(empty_mode, "toggle: off"):
+            select_mode(attract_mode, "toggle: on")
+        current_mode.next_scene()
     elif action == "off":
         print 'off'
-        FrameMode = 'stopped'
+        frame_mode = 'stopped'
         strip.clear()
     elif action == "stop":
         print 'stop'
-        FrameMode = 'stopped'
+        frame_mode = 'stopped'
     elif action in ["start", "resume", "on"]:
         print 'start'
-        FrameMode = 'scenes'
+        frame_mode = 'scenes'
     elif action == "reverse":
-        Modifiers['reverse'] = True
+        frame_modifiers['reverse'] = True
     elif action == "spin":
-        Modifiers['spin'] = True
-        SpinCount = 0
+        frame_modifiers['spin'] = True
+        spin_count = 0
     else:
         print "unknown message:", action
 
-FrameMode = 'scenes'
+frame_mode = 'scenes'
 
 def handle_message():
-    global FrameMode
+    global frame_mode
     message = get_message()
     if not message: return False
 
     messageType = message["type"]
     if messageType == "action":
-        FrameMode = 'scenes'
+        frame_mode = 'scenes'
         handle_action(message)
     elif messageType == "ping":
         print "pong"
     elif messageType == "pixels":
-        # print 'switch to mode', FrameMode
-        FrameMode = 'slave'
+        select_mode(slave_mode, "game mode on")
+        # print 'switch to mode', frame_mode
+        frame_mode = 'slave'
         global LEDState
         LEDState = json.loads(str(message["leds"]))
     elif messageType == "gamekey":
-        FrameMode = 'default'
-        select_mode(GameMode, "game mode on")
+        frame_mode = 'default'
+        select_mode(game_mode, "game mode on")
         key, state = message.get("key"), message.get("state")
         if key in gamekeys:
             gamekeys = {
@@ -189,7 +188,7 @@ def handle_message():
             }
             gamekeys[key] = bool(state)
             print gamekeys
-            GameMode.child.handle_game_keys(gamekeys)
+            game_mode.child.handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
     return True
@@ -244,13 +243,13 @@ def do_slave_frame():
 
 def do_scenes_frame():
     strip.clear()
-    CurrentMode.render(strip)
-    CurrentMode.step()
+    current_mode.render(strip)
+    current_mode.step()
 
 def do_stopped_frame():
     pass
 
-FrameModeFunctions = {
+frame_modeFunctions = {
     'slave'  : do_slave_frame,
     'scenes' : do_scenes_frame,
     'stopped': do_stopped_frame,
@@ -258,15 +257,15 @@ FrameModeFunctions = {
 
 print "Starting."
 frame_deltas = [] # FIFO of the last 60 frame latencies
-Modifiers = dict(spin=False, reverse=False)
-SpinCount = 0
+frame_modifiers = dict(spin=False, reverse=False)
+spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
 last_frame_t = time.time()
 last_frame_printed_t = time.time()
 
 def do_frame(options):
-    global last_frame_t, last_frame_printed_t, SpinCount
+    global last_frame_t, last_frame_printed_t, spin_count
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t
@@ -281,20 +280,20 @@ def do_frame(options):
             last_frame_printed_t = frame_t
 
     # Render the current frame
-    FrameModeFunctions[FrameMode]()
+    frame_modeFunctions[frame_mode]()
 
     # Apply modifiers
-    if Modifiers['spin']:
-        strip.leds = strip.leds[SpinCount:] + strip.leds[:SpinCount]
-        SpinCount += 3 * 4
-        if SpinCount >= 450:
-            Modifiers['spin'] = False
-    if Modifiers['reverse']:
+    if frame_modifiers['spin']:
+        strip.leds = strip.leds[spin_count:] + strip.leds[:spin_count]
+        spin_count += 3 * 4
+        if spin_count >= 450:
+            frame_modifiers['spin'] = False
+    if frame_modifiers['reverse']:
         strip.reverse()
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if FrameMode != 'slave':
+        if frame_mode != 'slave':
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print "Frame lagging. Time to optimize."
