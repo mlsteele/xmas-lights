@@ -11,13 +11,30 @@ A Python program that runs on a Raspberry Pi and animates the lights on an APA10
 
 This README is divided into three sections:
 
-* Installing and running the program on the Raspberry Pi.
-* Optional: Configuring the Pi and another workstation for streamlined development with automatic reloading.
-* Optional: Configuring a WebServer for remote control of the lights via IFTTT, Slack, or Twilio.
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Raspberry Pi](#raspberry-pi)
+  - [Raspberry Pi Installation](#raspberry-pi-installation)
+  - [Running on the Pi](#running-on-the-pi)
+  - [Live-Reload](#live-reload)
+- [Development Workstation](#development-workstation)
+  - [Mac OS Installation](#mac-os-installation)
+  - [Linux Installation](#linux-installation)
+  - [Installation (Mac OS and Linux)](#installation-mac-os-and-linux)
+  - [Live Reload Development Flow](#live-reload-development-flow)
+- [Server](#server)
+  - [Server Configuration](#server-configuration)
+  - [Local Server Development](#local-server-development)
+  - [Server Deployment](#server-deployment)
+- [Credits](#credits)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Raspberry Pi
 
-### Installation
+### Raspberry Pi Installation
 
 Enable the raspberry pi's SPI in raspi-config. This will require a reboot.
 
@@ -33,7 +50,7 @@ Install the required dependencies:
     sudo apt-get install -y python-pip
     pip install -r pi-requirements.txt
 
-### Running
+### Running on the Pi
 
 To run the lights:
 
@@ -51,7 +68,7 @@ from the terminal as above.
 and be aware that continuously writing to an SD card increases the likelihood that it will be corrupted if
 power to the Pi is cut while the Pi is running.)
 
-## Live-Reload Development Flow
+### Live-Reload
 
 For development, you can set up the Pi to restart the application whenever its sources change.
 
@@ -66,24 +83,29 @@ and run the lights thus:
 
 Now when you edit a `*.py` file, the program will reload.
 
-## Live-Download Development Flow
+## Development Workstation
 
 If you prefer to edit on a separate development workstation, you can configure it to download files
 to the Pi when they change on the development workstation. In conjunction with the Live-Reload flow, above,
 this has the effect that when you save a file from the editor on your workstation, the application on the Pi
 will shortly re-run with the changes.
 
-### Installation (Development Station)
+### Mac OS Installation
+
+[Install Homebrew](http://brew.sh). Then:
+
+    brew install ssh-copy-id entr
+
+### Linux Installation
+
+    apt-get install -y entr
+
+### Installation (Mac OS and Linux)
 
 On the development station, download the repo:
 
     git clone https://github.com/mlsteele/xmas-lights
     cd xmas-lights
-
-Run one of the following:
-
-    apt-get install -y entr       # Linux
-    brew install ssh-copy-id entr # Mac OS
 
 [Find your Pi's IP address](https://www.raspberrypi.org/documentation/troubleshooting/hardware/networking/ip-address.md),
 and add an entry in your ``.ssh/config` on your development workstation.
@@ -98,7 +120,7 @@ For example, if your Pi's IP address is `192.168.0.36`, add the following.
     [ -f ~/.ssh/id_rsa.pub] || ssh-keygen -t rsa
     ssh-copy-id -i ~/.ssh/id_rsa.pub pi@xmas-pi
 
-### Running
+### Live Reload Development Flow
 
 Run `./live-reload.sh` on the Pi. Use the first line below to simply run it:
 
@@ -116,7 +138,7 @@ Run this on the development station:
 
 ## Server
 
-### Configuration
+### Server Configuration
 
 The server and the Pi communicate using RabbitMQ.
 Provision a RabbitMQ host, and retrieve its URI.
@@ -127,7 +149,7 @@ another editor. Remember to replace the example URI below by your Rabbit's URI.
 
     RABBIT_URL=amqp://user:pass@host:10000/vhost
 
-### Local Development
+### Local Server Development
 
 Run one of the following:
     apt-get install -y entr python-pip # Linux
@@ -138,7 +160,9 @@ Inside the `xmas-lights` directory:
     pip install -r requirements.txt # once
     python webserver.py
 
-### Deployment [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+### Server Deployment
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 The simplest way to deploy the app is to create a Heroku application, add a RabbitMQ add-on, and push
 this repository to the application.
