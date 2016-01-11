@@ -79,6 +79,8 @@ class Mode(Sprite):
     def __init__(self, children={}):
         self.children = set(children)
         self.current_child = None
+        if len(self.children) == 1:
+            self.child = list(self.children)[0]
         self.remaining_frames = 0
 
     def next_scene(self):
@@ -109,12 +111,6 @@ EmptyMode   = Mode()
 AttractMode = Mode({multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()})
 GameMode    = Mode({game_scene()})
 
-Modes = {
-    'empty'  : EmptyMode,
-    'attract': AttractMode,
-    'game'   : GameMode,
-}
-
 CurrentMode = AttractMode
 
 # Select mode, and print message if the mode has changed.
@@ -136,7 +132,7 @@ def select_mode(mode, switchMessage=None):
 LEDState = None
 
 def handle_action(message):
-    global CurrentMode, Modes, FrameMode, SpinCount
+    global CurrentMode, FrameMode, SpinCount
     action = message["action"]
     if action == "next":
         print "Advancing to the next scene."
@@ -160,8 +156,6 @@ def handle_action(message):
     elif action == "spin":
         Modifiers['spin'] = True
         SpinCount = 0
-    elif Modes.get(action):
-        select_mode(Modes[action])
     else:
         print "unknown message:", action
 
@@ -195,7 +189,7 @@ def handle_message():
             }
             gamekeys[key] = bool(state)
             print gamekeys
-            GameMode.children[0].handle_game_keys(gamekeys)
+            GameMode.child.handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
     return True
