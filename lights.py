@@ -16,17 +16,70 @@ strip = apa102.APA102(PixelStrip.count)
 ## Scenes
 ##
 
-FrameCount = 0
-CurrentScene = None
+# A Scene is just a Sprite that composes a set of underlying sprites
+class Scene(Sprite):
+    def __init__(self, children=[]):
+        def makeSprite(sprite):
+            if isinstance(sprite, type):
+                sprite = sprite()
+            return sprite
+        if not isinstance(children, (types.GeneratorType, collections.Sequence)):
+            children = [children]
+        self.children = map(makeSprite, list(children))
+        self.name = self.children[0].__class__.__name__ if self.children else 'empty'
+
+    def step(self):
+        for sprite in self.children:
+            sprite.step()
+
+    def render(self, strip):
+        for sprite in self.children:
+            sprite.render(strip)
 
 def make_sprite_scene(*sprites):
     def fn():
-        return sprites
-    fn.__name__ = sprites[0].__name__
+        scene = Scene(sprites)
+        scene.name = sprites[0].__name__
+        return scene
     return fn
 
+def empty_scene():
+    return Scene()
+
+def multi_scene():
+    snakeCount = 15
+    sprites = list(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+    sprites.append(EveryNth(factor=0.1, v=0.3))
+    sprites.append(SparkleFade(interval=0.08))
+    return Scene(sprites)
+
+def snakes_scene():
+    snakeCount = 15
+    return Scene(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+
+def nth_scene():
+    return Scene([
+        EveryNth(factor=0.1),
+        EveryNth(factor=0.101)
+    ])
+
+def sparkle_scene():
+    return Scene([Sparkle, SparkleFade])
+
+tunnel_scene = make_sprite_scene(Tunnel)
+
+def drips_scene():
+    return Scene(Drips for _ in range(10))
+
+game_scene = make_sprite_scene(InteractiveWalk)
+
+## Modes
+##
+
+FrameCount = 0
+CurrentScene = None
+
 def select_another_scene():
-    global Sprites
     global CurrentScene
     # choose a different scene than the current one
     otherScenes = CurrentMode - {CurrentScene}
@@ -35,58 +88,15 @@ def select_another_scene():
         return
 
     scene = random.choice(list(otherScenes))
-    print 'selecting', scene.__name__
+    print 'selecting', scene.name
     CurrentScene = scene
-
-    def makeSprite(sprite):
-        if isinstance(sprite, type):
-            sprite = sprite()
-        return sprite
-    sprites = scene()
-    if not isinstance(sprites, (types.GeneratorType, collections.Sequence)):
-        sprites = [sprites]
-    Sprites = map(makeSprite, list(sprites))
 
     global FrameCount
     FrameCount = 400 + random.randrange(400)
 
-def empty_scene():
-    return []
-
-def multi_scene():
-    snakeCount = 15
-    sprites = []
-    sprites.extend(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
-    sprites.append(EveryNth(factor=0.1, v=0.3))
-    sprites.append(SparkleFade(interval=0.08))
-    return sprites
-
-def snakes_scene():
-    snakeCount = 15
-    return (Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
-
-def nth_scene():
-    return [
-        EveryNth(factor=0.1),
-        EveryNth(factor=0.101)
-    ]
-
-def sparkle_scene():
-    return [Sparkle, SparkleFade]
-
-tunnel_scene = make_sprite_scene(Tunnel)
-
-def drips_scene():
-    return (Drips for _ in range(10))
-
-game_scene = make_sprite_scene(InteractiveWalk)
-
-## Modes
-##
-
-EmptyMode   = {empty_scene}
-AttractMode = {multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene}
-GameMode    = {game_scene}
+EmptyMode   = {empty_scene()}
+AttractMode = {multi_scene(), snakes_scene(), nth_scene(), sparkle_scene(), tunnel_scene()}
+GameMode    = {game_scene()}
 
 Modes = {
     'empty'  : EmptyMode,
@@ -94,11 +104,12 @@ Modes = {
     'game'   : GameMode,
 }
 
-CurrentMode = Modes['attract']
+CurrentMode = AttractMode
 
 def select_mode(sceneSet, switchMessage=None):
     global CurrentMode, CurrentScene
-    if CurrentMode == sceneSet: return False
+    if CurrentMode == sceneSet:
+        return False
     print switchMessage
     CurrentMode = sceneSet
     CurrentScene = None
@@ -224,9 +235,8 @@ def do_scenes_frame():
 
     strip.clear()
 
-    for sprite in Sprites:
-        sprite.render(strip)
-        sprite.step()
+    CurrentScene.render(strip)
+    CurrentScene.step()
 
 def do_stopped_frame():
     pass
