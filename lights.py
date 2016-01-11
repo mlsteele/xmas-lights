@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import collections
 import time
 import types
 import random
@@ -19,7 +20,10 @@ FrameCount = 0
 CurrentScene = None
 
 def make_sprite_scene(*sprites):
-    return lambda:sprites
+    def fn():
+        return sprites
+    fn.__name__ = sprites[0].__name__
+    return fn
 
 def select_another_scene():
     global Sprites
@@ -36,14 +40,12 @@ def select_another_scene():
 
     def makeSprite(sprite):
         if isinstance(sprite, type):
-            print 'make', sprite
             sprite = sprite()
         return sprite
     sprites = scene()
-    import collections
-    if not isinstance(sprites, collections.Sequence):
+    if not isinstance(sprites, (types.GeneratorType, collections.Sequence)):
         sprites = [sprites]
-    Sprites = map(makeSprite, sprites)
+    Sprites = map(makeSprite, list(sprites))
 
     global FrameCount
     FrameCount = 400 + random.randrange(400)
