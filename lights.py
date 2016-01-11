@@ -1,10 +1,6 @@
 #!/usr/bin/python
 
-import collections
-import time
-import types
-import random
-import json
+import collections, json, random, sys, time, types
 import apa102
 from messages import get_message
 from publish_message import publish
@@ -212,26 +208,33 @@ parser.add_argument('--sprite', dest='sprite', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
-args = parser.parse_args()
+def main(args):
+    if args.scene:
+        try:
+            scenefn = eval(args.scene + '_scene')
+        except NameError:
+            print >> sys.stderr, "Unknown scene:", args.scene
+            exit(1)
+        scene = scenefn()
+        select_mode(Mode({scene}))
 
-import sys
-if args.scene:
-    try:
-        scenefn = eval(args.scene + '_scene')
-    except NameError:
-        print >> sys.stderr, "Unknown scene:", args.scene
-        exit(1)
-    scene = scenefn()
-    select_mode(Mode({scene}))
+    if args.sprite:
+        try:
+            sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
+        except NameError:
+            print >> sys.stderr, "Unknown sprite:", args.sprite
+            exit(1)
+        scene = Scene(sprite)
+        select_mode(Mode({scene}))
 
-if args.sprite:
-    try:
-        sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
-    except NameError:
-        print >> sys.stderr, "Unknown sprite:", args.sprite
-        exit(1)
-    scene = Scene(sprite)
-    select_mode(Mode({scene}))
+    while True:
+        if not args.master:
+            handle_message()
+
+        do_frame(args)
+
+        if args.master:
+            publish("pixels", leds=json.dumps(strip.leds))
 
 def do_slave_frame():
     global LEDState
@@ -254,52 +257,54 @@ FrameModeFunctions = {
     'stopped': do_stopped_frame,
 }
 
-def do_frame():
-    FrameModeFunctions[FrameMode]()
-
 print "Starting."
-frame_deltas = []
+frame_deltas = [] # FIFO of the last 60 frame latencies
 Modifiers = dict(spin=False, reverse=False)
 SpinCount = 0
+
+IDEAL_FRAME_DELTA_T = 1.0 / 60
+last_frame_t = time.time()
 last_frame_printed_t = time.time()
 
-try:
+def do_frame(options):
+    global last_frame_t, last_frame_printed_t, SpinCount
+
+    frame_t = time.time()
+    delta_t = frame_t - last_frame_t
+
+    # Reprt the running average frame rate
+    frame_deltas.append(delta_t)
+    if len(frame_deltas) > 60:
+        frame_deltas.pop(0)
+    if options.print_frame_rate:
+        if frame_t - (last_frame_printed_t or frame_t) > 1:
+            print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
+            last_frame_printed_t = frame_t
+
+    # Render the current frame
+    FrameModeFunctions[FrameMode]()
+
+    # Apply modifiers
+    if Modifiers['spin']:
+        strip.leds = strip.leds[SpinCount:] + strip.leds[:SpinCount]
+        SpinCount += 3 * 4
+        if SpinCount >= 450:
+            Modifiers['spin'] = False
+    if Modifiers['reverse']:
+        strip.reverse()
+
+    # Slow down to target frame rate
+    if delta_t < IDEAL_FRAME_DELTA_T:
+        if FrameMode != 'slave':
+            time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
+    elif options.warn:
+        print "Frame lagging. Time to optimize."
+
     last_frame_t = time.time()
-    ideal_frame_delta_t = 1.0 / 60
+    strip.show()
 
-    while True:
-        if not args.master:
-            handle_message()
-
-        do_frame()
-
-        frame_t = time.time()
-        delta_t = frame_t - last_frame_t
-        frame_deltas.append(delta_t)
-        if len(frame_deltas) > 60:
-            frame_deltas.pop(0)
-        if args.print_frame_rate:
-            if frame_t - (last_frame_printed_t or frame_t) > 1:
-                print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
-                last_frame_printed_t = frame_t
-        if delta_t < ideal_frame_delta_t:
-            if FrameMode != 'slave':
-                time.sleep(ideal_frame_delta_t - delta_t)
-        elif args.warn:
-            print "Frame lagging. Time to optimize."
-        last_frame_t = time.time()
-
-        if Modifiers['spin']:
-            strip.leds = strip.leds[SpinCount:] + strip.leds[:SpinCount]
-            SpinCount += 3 * 4
-            if SpinCount >= 450:
-                Modifiers['spin'] = False
-        if Modifiers['reverse']:
-            strip.reverse()
-        strip.show()
-
-        if args.master:
-            publish("pixels", leds=json.dumps(strip.leds))
-
+try:
+    args = parser.parse_args()
+    main(args)
 finally:
     strip.cleanup()
