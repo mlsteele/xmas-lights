@@ -20,5 +20,5 @@ if MQTT_URL:
     if url.path:
         username = url.path[1:] + ':' + username
 
-    auth = dict(username=username, password=password)
+    auth = dict(username=username, password=password) if username else None
     port = 1883
