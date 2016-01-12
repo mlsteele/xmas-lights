@@ -146,11 +146,11 @@ def handle_action(message):
     elif action in ["off", "stop"]:
         frame_modifiers.add(action)
     elif action in ["start", "resume", "on"]:
-        frame_modifiers -= set(['stop', 'off'])
+        frame_modifiers -= set(["stop", "off"])
     elif action == "reverse":
-        frame_modifiers.add('reverse')
+        frame_modifiers ^= set(["reverse"])
     elif action == "spin":
-        frame_modifiers.add('spin')
+        frame_modifiers.add("spin")
         spin_count = 0
     elif action == "faster":
         change_speed_by(1.5)
@@ -263,7 +263,10 @@ def do_frame(options):
     if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
         current_mode.step()
         current_mode.render(strip, synthetic_time)
-        synthetic_time += IDEAL_FRAME_DELTA_T * speed
+        dtime = IDEAL_FRAME_DELTA_T * speed
+        if 'reverse' in frame_modifiers:
+            dtime *= -1
+        synthetic_time += dtime
 
     # Apply modifiers
     if 'spin' in frame_modifiers:
@@ -271,8 +274,6 @@ def do_frame(options):
         spin_count += 3 * 4
         if spin_count >= 450:
             frame_modifiers.discard('spin')
-    if 'reverse' in frame_modifiers:
-        strip.reverse()
     if 'invert' in frame_modifiers:
         for i in range(len(strip.leds)):
             if i % 4:
