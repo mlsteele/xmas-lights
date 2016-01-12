@@ -34,19 +34,20 @@ class Scene(Sprite):
 
 def make_multi_scene():
     snakeCount = 15
-    sprites = list(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+    sprites = list(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
     return Scene(sprites)
 
 def make_snakes_scene():
     snakeCount = 15
-    return Scene(Snake(head=i*(PixelStrip.count / float(snakeCount)), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+    return Scene(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
 
 multi_scene = make_multi_scene()
 snakes_scene = make_snakes_scene()
 nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
 sparkle_scene = Scene([Sparkle, SparkleFade])
+gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
 tunnel_scene = Scene(Tunnel)
 drips_scene = Scene(Drips for _ in range(10))
 game_scene = Scene(InteractiveWalk)
@@ -193,11 +194,14 @@ parser.add_argument('--debug-messages', dest='debug_messages', action='store_tru
 parser.add_argument('--pygame', dest='pygame', action='store_true')
 parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
+parser.add_argument('--speed', dest='speed', type=float)
 parser.add_argument('--sprite', dest='sprite', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
 def main(args):
+    global speed
+
     # FIXME would need to preceed `import apa102` to have an effect
     if args.pygame:
         os.environ['SPIDEV_PYGAME'] = '1'
@@ -222,6 +226,9 @@ def main(args):
             exit(1)
         scene = Scene(sprite)
         select_mode(Mode({scene}))
+
+    if args.speed:
+        speed = args.speed
 
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
@@ -273,9 +280,9 @@ def do_frame(options):
                 strip.leds[i] = 255 - strip.leds[i]
             else:
                 strip.leds[i] = 0xe0 | 1
-    for i in range(len(strip.leds)):
-        if i % 4 is 0:
-            strip.leds[i] = 0xe7
+    # for i in range(len(strip.leds)):
+    #     if i % 4 is 0:
+    #         strip.leds[i] = 0xe7
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t

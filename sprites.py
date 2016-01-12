@@ -1,5 +1,4 @@
-import random
-import time
+import random, math, time
 from led_geometry import PixelStrip
 
 def bound(x):
@@ -17,18 +16,27 @@ class Sprite(object):
         raise NotImplementedError
 
 class Snake(Sprite):
-    def __init__(self, head=0, speed=1, brightness=0.5):
-        self.head = head
-        self.brightness = float(brightness)
-        self.length = 10
+    def __init__(self, offset=0, speed=1, length=10, saturation=1.0, brightness=0.5):
+        self.offset = float(offset)
+        self.length = int(length)
         self.speed = 60.0 * speed
-        self.hue_offset = head
+        self.hue_offset = float(offset)
+        self.saturation = float(saturation)
+        self.brightness = float(brightness)
 
     def render(self, strip, t):
-        head = self.head + self.speed * t
+        offset = self.offset + self.speed * t
+        brightness = self.brightness
+        length = self.length
+        x = int(offset)
         for i in xrange(self.length):
-            h, s, v = 0.5 * (self.hue_offset+head+i) / PixelStrip.count, 1, self.brightness * i / self.length
-            strip.addPixelHSV(bound(int(head) + i), h, s, v)
+            h, v = 0.5 * bound(self.hue_offset + offset + i) / PixelStrip.count, brightness * i / length
+            strip.addPixelHSV(bound(x), h, self.saturation, v)
+            x += 1
+        # adds ~4% overhead
+        f, x = math.modf(offset + self.length)
+        if f > 0:
+            strip.addPixelHSV(bound(int(x)), h, self.saturation, 1)
 
 class EveryNth(Sprite):
     def __init__(self, offset=0, speed=0.25, factor=0.02, v=0.5):
@@ -41,7 +49,7 @@ class EveryNth(Sprite):
     def render(self, strip, t):
         offset = (self.offset + self.speed * t)
         for i in xrange(self.num):
-            x = int(bound(offset + self.skip * i))
+            x = bound(offset + self.skip * i)
             strip.addPixelHSV(x, 0, 0, self.v)
 
 class Sparkle(Sprite):

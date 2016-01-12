@@ -1,4 +1,5 @@
-import colorsys
+import colorsys, math
+
 try:
     import spidev
 except ImportError:
@@ -82,47 +83,54 @@ class APA102:
             self.leds.extend(pixel)
 
     """
-    void setPixel(ledNum, red, green, blue)
+    void setPixel(ledNum, r, g, b)
     Sets the color of one pixel in the LED stripe. The changed pixel is not shown yet on the Stripe, it is only
     written to the pixel buffer. Colors are passed individually.
     """
-    def setPixel(self, ledNum, red, green, blue):
-        if ledNum < 0:
+    def setPixel(self, x, r, g, b):
+        if x < 0:
             return # Pixel is invisible, so ignore
-        if ledNum >= self.numLEDs:
+        if x >= self.numLEDs:
             return # again, invsible
-        startIndex = 4 * ledNum
-        self.leds[startIndex] = self.ledstart
-        self.leds[startIndex + 3] = red
-        self.leds[startIndex + 1] = green
-        self.leds[startIndex + 2] = blue
+        byteIndex = 4 * x
+        self.leds[byteIndex + 3] = r
+        self.leds[byteIndex + 1] = g
+        self.leds[byteIndex + 2] = b
 
-    def addPixel(self, ledNum, red, green, blue):
-        if not (0 <= ledNum < self.numLEDs): return
-        startIndex = 4 * ledNum
-        self.leds[startIndex] = self.ledstart
-        self.leds[startIndex + 3] = max(0, min(255, self.leds[startIndex + 3] + red))
-        self.leds[startIndex + 1] = max(0, min(255, self.leds[startIndex + 1] + green))
-        self.leds[startIndex + 2] = max(0, min(255, self.leds[startIndex + 2] + blue))
+    def addPixel(self, x, r, g, b):
+        if isinstance(x, float):
+            f, x = math.modf(x)
+            x = int(x)
+            f = 1.0 - f
+            self.addPixel(x, int(r * f), int(g * f), int(b * f))
+            f = 1.0 - f
+            self.addPixel(x + 1, int(r * f), int(g * f), int(b * f))
+            return
+        if not (0 <= x < self.numLEDs):
+            return
+        byteIndex = 4 * x
+        self.leds[byteIndex + 3] = max(0, min(255, self.leds[byteIndex + 3] + r))
+        self.leds[byteIndex + 1] = max(0, min(255, self.leds[byteIndex + 1] + g))
+        self.leds[byteIndex + 2] = max(0, min(255, self.leds[byteIndex + 2] + b))
 
     """
-    void setPixelRGB(ledNum,rgbColor)
+    void setPixelRGB(x,rgbColor)
     Sets the color of one pixel in the LED stripe. The changed pixel is not shown yet on the Stripe, it is only
     written to the pixel buffer. Colors are passed combined (3 bytes concatenated)
     """
-    def setPixelRGB(self, ledNum, rgbColor):
-        self.setPixel(ledNum, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
+    def setPixelRGB(self, x, rgbColor):
+        self.setPixel(x, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
 
-    def addPixelRGB(self, ledNum, rgbColor):
-        self.setPixel(ledNum, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
+    def addPixelRGB(self, x, rgbColor):
+        self.addPixel(x, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
 
-    def setPixelHSV(self, ledNum, h, s, v):
+    def setPixelHSV(self, x, h, s, v):
         r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
-        self.setPixel(ledNum, r, g, b)
+        self.setPixel(x, r, g, b)
 
-    def addPixelHSV(self, ledNum, h, s, v):
+    def addPixelHSV(self, x, h, s, v):
         r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
-        self.addPixel(ledNum, r, g, b)
+        self.addPixel(x, r, g, b)
 
     """
     void show()
