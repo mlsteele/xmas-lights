@@ -1,4 +1,5 @@
-import colorsys, math
+import math, numpy
+from colorsys import hsv_to_rgb
 
 try:
     import spidev
@@ -6,151 +7,45 @@ except ImportError:
     print "spidev not found; using simulator"
     import spidev_sim as spidev
 
-"""
-Driver for APA102 LEDS (aka "DotStar").
-(c) Martin Erzberger 2015
-
-My very first Python code, so I am sure there is a lot to be optimized ;)
-
-Public methods are:
- - setPixel
- - setPixelRGB
- - show
- - clearStrip
- - cleanup
-
-The rest of the methods are used internally and should not be used by the user of the library.
-
-Very brief overview of APA102: An APA102 LED is addressed with SPI. The bits are shifted in one by one,
-starting with the least significant bit.
-
-An LED usually just forwards everything that is sent to its data-in to data-out. While doing this, it
-remembers its own color and keeps glowing with that color as long as there is power.
-
-An LED can be switched to not forward the data, but instead use the data to change it's own color.
-This is done by sending (at least) 32 bits of zeroes to data-in. The LED then accepts the next
-correct 32 bit LED frame (with color information) as its new color setting.
-
-After having received the 32 bit color frame, the LED changes color, and then resumes to just copying
-data-in to data-out.
-
-The really clever bit is this: While receiving the 32 bit LED frame, the LED sends zeroes on its
-data-out line. Because a color frame is 32 bits, the LED sends 32 bits of zeroes to the next LED.
-As we have seen above, this means that the next LED is now ready to accept a color frame and
-update its color.
-
-So that's really the entire protocol:
-- Start by sending 32 bits of zeroes. This prepares LED 1 to update its color.
-- Send color information one by one, starting with the color for LED 1, then LED 2 etc.
-- Finish off by cycling the clock line a few times to get all data to the very last LED on the strip
-
-The last step is necessary, because each LED delays forwarding the data a bit. Imagine ten people in
-a row. When you yell the last color information, i.e. the one for person ten, to the first person in
-the line, then you are not finished yet. Person one has to turn around and yell it to person 2, and
-so on. So it takes ten additional "dummy" cycles until person ten knows the color. When you look closer,
-you will see that not even person 9 knows the color yet. This information is still with person 2.
-Essentially the driver sends additional zeroes to LED 1 as long as it takes for the last color frame
-to make it down the line to the last LED.
-"""
 class APA102:
-    def __init__(self, numLEDs, globalBrightness=31): # The number of LEDs in the Strip
-        self.numLEDs = numLEDs
-        # LED startframe is three "1" bits, followed by 5 brightness bits
-        self.ledstart = (globalBrightness & 0x1f) | 0xe0 # Don't validate; just slash off extra bits
+    def __init__(self, count):
+        self.count = count
+        self.spi = spi = spidev.SpiDev()
+        spi.open(0, 1)
+        spi.max_speed_hz = 8000000
+        self.leds = numpy.zeros((self.count, 4))
         self.clear()
-        self.spi = spidev.SpiDev()  # Init the SPI device
-        self.spi.open(0, 1)  # Open SPI port 0, slave device (CS)  1
-        self.spi.max_speed_hz = 8000000 # Up the speed a bit, so that the LEDs are painted faster
 
-    """
-    void clockStartFrame()
-    This method clocks out a start frame, telling the receiving LED that it must update its own color now.
-    """
-    def clockStartFrame(self):
-        self.spi.xfer2([0x00, 0x00, 0x00, 0x00])  # Start frame, 32 zero bits
-
-    """
-    void clear()
-    Sets the strip color to black, does not show.
-    """
     def clear(self):
-        # (Re-)initialize the pixel buffer.
-        self.leds = []
-        # Allocate the entire buffer. If later some LEDs are not set, they will just be black, instead of crashing the
-        # driver.
-        pixel = [self.ledstart] + [0x00] * 3
-        for _ in range(self.numLEDs):
-            self.leds.extend(pixel)
+        self.leds[:,:] = 0.0
 
-    """
-    void setPixel(ledNum, r, g, b)
-    Sets the color of one pixel in the LED stripe. The changed pixel is not shown yet on the Stripe, it is only
-    written to the pixel buffer. Colors are passed individually.
-    """
-    def setPixel(self, x, r, g, b):
-        if x < 0:
-            return # Pixel is invisible, so ignore
-        if x >= self.numLEDs:
-            return # again, invsible
-        byteIndex = 4 * x
-        self.leds[byteIndex + 3] = r
-        self.leds[byteIndex + 1] = g
-        self.leds[byteIndex + 2] = b
+    def setPixelRGB(self, x, r, g, b):
+        if 0 <= x < self.count:
+            self.leds[x,1:] = [g, b, r]
 
-    def addPixel(self, x, r, g, b):
+    def addPixelRGB(self, x, r, g, b):
         if isinstance(x, float):
             f, x = math.modf(x)
             x = int(x)
             f = 1.0 - f
-            self.addPixel(x, int(r * f), int(g * f), int(b * f))
+            self.addPixelRGB(x, f * r, f * g, f * b)
             f = 1.0 - f
-            self.addPixel(x + 1, int(r * f), int(g * f), int(b * f))
+            self.addPixelRGB(x + 1, f * r, f * g, f * b)
             return
-        if not (0 <= x < self.numLEDs):
-            return
-        byteIndex = 4 * x
-        self.leds[byteIndex + 3] = max(0, min(255, self.leds[byteIndex + 3] + r))
-        self.leds[byteIndex + 1] = max(0, min(255, self.leds[byteIndex + 1] + g))
-        self.leds[byteIndex + 2] = max(0, min(255, self.leds[byteIndex + 2] + b))
-
-    """
-    void setPixelRGB(x,rgbColor)
-    Sets the color of one pixel in the LED stripe. The changed pixel is not shown yet on the Stripe, it is only
-    written to the pixel buffer. Colors are passed combined (3 bytes concatenated)
-    """
-    def setPixelRGB(self, x, rgbColor):
-        self.setPixel(x, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
-
-    def addPixelRGB(self, x, rgbColor):
-        self.addPixel(x, (rgbColor & 0xFF0000) >> 16, (rgbColor & 0x00FF00) >> 8, rgbColor & 0x0000FF)
+        if 0 <= x < self.count:
+            self.leds[x,1:] += [g, b, r]
 
     def setPixelHSV(self, x, h, s, v):
-        r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
-        self.setPixel(x, r, g, b)
+        self.setPixelRGB(x, *hsv_to_rgb(h, s, v))
 
     def addPixelHSV(self, x, h, s, v):
-        r, g, b = (int(255 * c) for c in colorsys.hsv_to_rgb(h, s, v))
-        self.addPixel(x, r, g, b)
+        self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
-    """
-    void show()
-    Sends the content of the pixel buffer to the strip.
-    Todo: More than 1024 LEDs requires more than one xfer operation.
-    """
     def show(self):
-        self.clockStartFrame()
-        self.spi.xfer2(self.leds) # SPI takes up to 4096 Integers. So we are fine for up to 1024 LEDs.
+        bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
+        bytes[::4] = 0xff
+        self.spi.xfer2([0, 0, 0, 0])
+        self.spi.xfer2(bytes.tolist())
 
-    """
-    void cleanup()
-    This method should be called at the end of a program in order to release the SPI device
-    """
-    def cleanup(self):
-        self.spi.close()  # ... SPI Port schliessen
-
-    def reverse(self):
-        src = self.leds
-        self.leds = dst = []
-        srclen = len(src)
-        for i in range(srclen, 0, -4):
-            dst.extend(src[i-4:i])
+    def close(self):
+        self.spi.close()
