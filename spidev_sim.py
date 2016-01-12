@@ -26,11 +26,9 @@ class SpiDev:
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        spacing = 10
+        width = self.width
         led_size = 5
-        dotsPerRow = self.width // spacing
-        windings = 9
-        pixelCount = PixelStrip.count
+        ix = self.ix
         i = 0
         while i < len(values):
             frame = values[i]; i += 1
@@ -39,16 +37,16 @@ class SpiDev:
             r = values[i]; i += 1
 
             if frame == 0x0:
-                self.ix = 0
+                ix = 0
                 continue
 
             assert (frame & 0xe0) == 0xe0
             brightness = frame & 0x1f
             r, g, b = (c * brightness / 0x1f for c in (r, g, b))
-            ix = self.ix
-            self.ix += 1
+            ix += 1
             x, y = PixelStrip.pos(ix)
-            x = x * (self.width - led_size)
-            y = y * (self.width - led_size)
+            x = x * (width - led_size)
+            y = y * (width - led_size)
             pygame.draw.circle(self.screen, (r, g, b), (int(round(x)), int(round(y))), led_size)
+        self.ix = ix
         pygame.display.update()
