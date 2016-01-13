@@ -72,7 +72,9 @@ class APA102:
     def show(self):
         bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype(int)
         bytes[::4] = 0xff
-        bytes = numpy.insert(bytes, 0, [0, 0, 0, 0])
+        self.spi.xfer2([0, 0, 0, 0])
+        # the following alternative causes an intermittent stutter:
+        # bytes = numpy.insert(bytes, 0, [0, 0, 0, 0])
         self.spi.xfer2(bytes.tolist())
 
     def close(self):
