@@ -12,6 +12,7 @@ except ImportError:
 logger = logging.getLogger("apa102")
 # logger.setLevel(logging.INFO)
 
+GAMMA = 2.5
 SPI_MAX_SPEED_HZ = 8000000
 
 class APA102:
@@ -63,9 +64,9 @@ class APA102:
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
     def show(self):
-        bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
+        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds ** GAMMA, 0.0, 1.0))).astype(int)
         bytes[::4] = 0xff
-        self.spi.xfer2([0, 0, 0, 0])
+        bytes = numpy.insert(bytes, 0, [0, 0, 0, 0])
         self.spi.xfer2(bytes.tolist())
 
     def close(self):
