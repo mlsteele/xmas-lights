@@ -1,4 +1,5 @@
 import random, math, time
+from operator import itemgetter
 from led_geometry import PixelStrip
 
 def bound(x):
@@ -54,24 +55,36 @@ class EveryNth(Sprite):
 
 class Hoop(Sprite):
     def __init__(self):
-        self.radius = random.random()
+        self.reset()
+
+    def reset(self):
+        self.r0 = None
+        self.radius = -random.random() / 10
         self.hue = random.random()
         self.speed = random.randrange(1, 3) * 0.1
+        self.reverse = random.random() < 0.25
         # each ring is a tuple of start_index, end_index
         indices = list(p.index for p in PixelStrip.pixels_near_angle(180))
         self.ring_indices = zip(indices, indices[1:])
         self.radii = [(PixelStrip.radius(i0) + PixelStrip.radius(i1)) / 2 for i0, i1 in self.ring_indices]
 
+    # def step(self):
+    #     if self.r0 and self.r0 > 1.1:
+    #         self.reset()
+
     def render(self, strip, t):
-        r0 = (self.radius + self.speed * t) % 1
+        # r0 = (self.radius + self.speed * t) % 1
+        self.r0 = r0 = self.radius + self.speed * t
+        if self.reverse:
+            r0 = 1 - r0
+        r0 = r0 % 1
         ring_distances = [abs(r - r0) for r in self.radii]
-        from operator import itemgetter
         closest = [i for i, _ in sorted(enumerate(ring_distances), key=itemgetter(1))[:2]]
         d_sum = sum(ring_distances[i] for i in closest)
-        for i, x0, x1 in ((i,) + self.ring_indices[i] for i in closest):
-            h = self.hue
-            v = ring_distances[i] / d_sum
-            strip.addPixelRangeHSV(x0, x1, h, 0.5, 1 - v)
+        vs = [1.0 - ring_distances[i] / d_sum for i, _ in enumerate(ring_distances)]
+        h = self.hue
+        for v, x0, x1 in ((vs[i],) + self.ring_indices[i] for i in closest):
+            strip.addPixelRangeHSV(x0, x1, h, 0.5, v)
 
 class Sparkle(Sprite):
     def render(self, strip, t):
