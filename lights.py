@@ -312,4 +312,4 @@ try:
     args = parser.parse_args()
     main(args)
 finally:
-    strip.cleanup()
+    strip.close()
