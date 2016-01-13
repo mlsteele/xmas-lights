@@ -1,5 +1,6 @@
-import math, numpy
+import logging, math, numpy
 from colorsys import hsv_to_rgb
+import cPickle as pickle
 
 try:
     import spidev
@@ -7,16 +8,19 @@ except ImportError:
     print "spidev not found; using simulator"
     import spidev_sim as spidev
 
+logger = logging.getLogger('apa102')
+# logger.setLevel(logging.INFO)
+
 def createSpiSlave(count, q):
-    print 'creating background', count, q
+    logger.info('creating background %d', count)
     strip = APA102(count, queue=q, master=False)
     while True:
-        command = q.get()
-        if isinstance(command, str) and command == "close":
+        item = q.get()
+        if isinstance(item, str) and item == "close":
             strip.close()
             return
-        strip.leds = command
-        strip.show()
+        bytes = pickle.loads(item)
+        strip.show(bytes)
 
 class APA102:
     def __init__(self, count, master=False, queue=None):
@@ -72,15 +76,16 @@ class APA102:
     def addPixelHSV(self, x, h, s, v):
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
-    def show(self):
+    def show(self, bytes=None):
         self.frame_no += 1
-        if self.is_master and self.queue:
-            # print 'enqueue frame #', self.frame_no
-            self.queue.put(self.leds)
-        if self.spi:
-            # print 'send frame #', self.frame_no
+        if bytes is None:
             bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
             bytes[::4] = 0xff
+        if self.is_master and self.queue:
+            logger.info('enqueue frame #%d', self.frame_no)
+            self.queue.put(pickle.dumps(bytes, protocol=-1))
+        if self.spi:
+            logger.info('send frame #%d', self.frame_no)
             self.spi.xfer2([0, 0, 0, 0])
             self.spi.xfer2(bytes.tolist())
 
