@@ -70,7 +70,7 @@ class APA102:
         self.addPixelRangeRGB(x0, x1, *hsv_to_rgb(h, s, v))
 
     def show(self):
-        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds ** GAMMA, 0.0, 1.0))).astype(int)
+        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype(int)
         bytes[::4] = 0xff
         bytes = numpy.insert(bytes, 0, [0, 0, 0, 0])
         self.spi.xfer2(bytes.tolist())
