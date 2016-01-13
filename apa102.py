@@ -7,12 +7,33 @@ except ImportError:
     print "spidev not found; using simulator"
     import spidev_sim as spidev
 
+def createSpiSlave(count, q):
+    print 'creating background', count, q
+    strip = APA102(count, queue=q, master=False)
+    while True:
+        command = q.get()
+        if isinstance(command, str) and command == "close":
+            strip.close()
+            return
+        strip.leds = command
+        strip.show()
+
 class APA102:
-    def __init__(self, count):
+    def __init__(self, count, master=False, queue=None):
         self.count = count
-        self.spi = spi = spidev.SpiDev()
-        spi.open(0, 1)
-        spi.max_speed_hz = 8000000
+        self.spi = None
+        self.is_master = master
+        self.frame_no = 0
+        if master:
+            from multiprocessing import Process, Queue
+            queue = queue or Queue(1)
+            p = Process(target=createSpiSlave, args=(count,queue))
+            p.start()
+        else:
+            self.spi = spi = spidev.SpiDev()
+            spi.open(0, 1)
+            spi.max_speed_hz = 8000000
+        self.queue = queue
         self.leds = numpy.zeros((self.count, 4))
         self.clear()
 
@@ -52,10 +73,20 @@ class APA102:
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
     def show(self):
-        bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
-        bytes[::4] = 0xff
-        self.spi.xfer2([0, 0, 0, 0])
-        self.spi.xfer2(bytes.tolist())
+        self.frame_no += 1
+        if self.is_master and self.queue:
+            # print 'enqueue frame #', self.frame_no
+            self.queue.put(self.leds)
+        if self.spi:
+            # print 'send frame #', self.frame_no
+            bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
+            bytes[::4] = 0xff
+            self.spi.xfer2([0, 0, 0, 0])
+            self.spi.xfer2(bytes.tolist())
 
     def close(self):
-        self.spi.close()
+        if self.is_master and self.queue:
+            self.queue.put("close")
+            # TODO join?
+        if self.spi:
+            self.spi.close()

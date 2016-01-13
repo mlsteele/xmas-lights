@@ -300,8 +300,7 @@ def do_frame(options):
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
         if current_mode != slave_mode:
-            pass
-            # time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
+            time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print "Frame lagging. Time to optimize."
 
