@@ -63,6 +63,12 @@ class APA102:
     def addPixelHSV(self, x, h, s, v):
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
+    def addPixelRangeRGB(self, x0, x1, r, g, b):
+        self.leds[x0:x1,1:] += [g, b, r]
+
+    def addPixelRangeHSV(self, x0, x1, h, s, v):
+        self.addPixelRangeRGB(x0, x1, *hsv_to_rgb(h, s, v))
+
     def show(self):
         bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds ** GAMMA, 0.0, 1.0))).astype(int)
         bytes[::4] = 0xff

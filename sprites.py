@@ -71,8 +71,7 @@ class Hoop(Sprite):
         for i, x0, x1 in ((i,) + self.ring_indices[i] for i in closest):
             h = self.hue
             v = ring_distances[i] / d_sum
-            for x in xrange(x0, x1):
-                strip.addPixelHSV(x, h, 0.5, 1 - v)
+            strip.addPixelRangeHSV(x0, x1, h, 0.5, 1 - v)
 
 class Sparkle(Sprite):
     def render(self, strip, t):
