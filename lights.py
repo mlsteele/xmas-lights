@@ -194,6 +194,7 @@ parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
 parser.add_argument('--debug-messages', dest='debug_messages', action='store_true')
 parser.add_argument('--pygame', dest='pygame', action='store_true')
 parser.add_argument('--master', dest='master', action='store_true')
+parser.add_argument('--no-sync', dest='no_sync', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
 parser.add_argument('--speed', dest='speed', type=float)
 parser.add_argument('--sprite', dest='sprite', type=str)
@@ -231,6 +232,9 @@ def main(args):
     if args.speed:
         speed = args.speed
 
+    if args.no_sync:
+        frame_modifiers.discard("sync")
+
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
 
@@ -247,7 +251,7 @@ def main(args):
 last_frame_printed_t = time.time()
 frame_deltas = [] # FIFO of the last 60 frame latencies
 
-frame_modifiers = set()
+frame_modifiers = set(["sync"])
 spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
@@ -259,23 +263,23 @@ def do_frame(options):
     global last_frame_t, last_frame_printed_t, spin_count, synthetic_time
 
     # Render the current frame
-    if 'stop' not in frame_modifiers:
+    if "stop" not in frame_modifiers:
         strip.clear()
-    if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
+    if "stop" not in frame_modifiers and "off" not in frame_modifiers:
         current_mode.step()
         current_mode.render(strip, synthetic_time)
         dtime = IDEAL_FRAME_DELTA_T * speed
-        if 'reverse' in frame_modifiers:
+        if "reverse" in frame_modifiers:
             dtime *= -1
         synthetic_time += dtime
 
     # Apply modifiers
-    if 'spin' in frame_modifiers:
+    if "spin" in frame_modifiers:
         strip.leds = strip.leds[spin_count:] + strip.leds[:spin_count]
         spin_count += 3 * 4
         if spin_count >= 450:
-            frame_modifiers.discard('spin')
-    if 'invert' in frame_modifiers:
+            frame_modifiers.discard("spin")
+    if "invert" in frame_modifiers:
         for i in range(len(strip.leds)):
             if i % 4:
                 # strip.leds[i] = 16 - strip.leds[i] * 16 / 256
@@ -300,7 +304,7 @@ def do_frame(options):
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if current_mode != slave_mode:
+        if current_mode != slave_mode and 'sync' in frame_modifiers:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print "Frame lagging. Time to optimize."
