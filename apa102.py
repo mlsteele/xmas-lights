@@ -1,43 +1,29 @@
 import logging, math, numpy
 from colorsys import hsv_to_rgb
-import cPickle as pickle
+from spi_background import SpiMaster
 
+# TODO DRY spi_background.py
 try:
     import spidev
 except ImportError:
     print "spidev not found; using simulator"
     import spidev_sim as spidev
 
-logger = logging.getLogger('apa102')
+logger = logging.getLogger("apa102")
 # logger.setLevel(logging.INFO)
 
-def createSpiSlave(count, q):
-    logger.info('creating background %d', count)
-    strip = APA102(count, queue=q, master=False)
-    while True:
-        item = q.get()
-        if isinstance(item, str) and item == "close":
-            strip.close()
-            return
-        bytes = pickle.loads(item)
-        strip.show(bytes)
+SPI_MAX_SPEED_HZ = 8000000
 
 class APA102:
-    def __init__(self, count, master=False, queue=None):
+    def __init__(self, count, bus=0, device=1, master=True):
         self.count = count
         self.spi = None
-        self.is_master = master
-        self.frame_no = 0
         if master:
-            from multiprocessing import Process, Queue
-            queue = queue or Queue(1)
-            p = Process(target=createSpiSlave, args=(count,queue))
-            p.start()
+            self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=SPI_MAX_SPEED_HZ)
         else:
             self.spi = spi = spidev.SpiDev()
-            spi.open(0, 1)
-            spi.max_speed_hz = 8000000
-        self.queue = queue
+            spi.open(bus, device)
+            spi.max_speed_hz = SPI_MAX_SPEED_HZ
         self.leds = numpy.zeros((self.count, 4))
         self.clear()
 
@@ -76,22 +62,11 @@ class APA102:
     def addPixelHSV(self, x, h, s, v):
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
-    def show(self, bytes=None):
-        self.frame_no += 1
-        if bytes is None:
-            bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
-            bytes[::4] = 0xff
-        if self.is_master and self.queue:
-            logger.info('enqueue frame #%d', self.frame_no)
-            self.queue.put(pickle.dumps(bytes, protocol=-1))
-        if self.spi:
-            logger.info('send frame #%d', self.frame_no)
-            self.spi.xfer2([0, 0, 0, 0])
-            self.spi.xfer2(bytes.tolist())
+    def show(self):
+        bytes = numpy.ravel(255 * numpy.clip(self.leds, 0.0, 1.0)).astype(int)
+        bytes[::4] = 0xff
+        self.spi.xfer2([0, 0, 0, 0])
+        self.spi.xfer2(bytes.tolist())
 
     def close(self):
-        if self.is_master and self.queue:
-            self.queue.put("close")
-            # TODO join?
-        if self.spi:
-            self.spi.close()
+        self.spi.close()
