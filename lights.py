@@ -14,7 +14,7 @@ strip = apa102.APA102(PixelStrip.count)
 
 # A Scene is just a Sprite that composes a set of underlying sprites
 class Scene(Sprite):
-    def __init__(self, children=[]):
+    def __init__(self, children=[], name=None):
         def makeSprite(sprite):
             if isinstance(sprite, type):
                 sprite = sprite()
@@ -22,7 +22,7 @@ class Scene(Sprite):
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
         self.children = map(makeSprite, list(children))
-        self.name = self.children[0].__class__.__name__ if self.children else 'empty'
+        self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def step(self):
         for child in self.children:
@@ -37,11 +37,12 @@ def make_multi_scene():
     sprites = list(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
-    return Scene(sprites)
+    return Scene(sprites, 'Multi')
 
 def make_snakes_scene():
     snakeCount = 15
-    return Scene(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+    sprites = [Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount)]
+    return Scene(sprites, 'Snakes')
 
 multi_scene = make_multi_scene()
 snakes_scene = make_snakes_scene()
@@ -73,7 +74,7 @@ class Mode(Sprite):
             return
 
         child = random.choice(list(others))
-        print 'selecting', child.name
+        print 'selecting mode', child.name
         self.current_child = child
 
         self.remaining_frames = 400 + random.randrange(400)
