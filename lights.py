@@ -48,7 +48,13 @@ multi_scene = make_multi_scene()
 snakes_scene = make_snakes_scene()
 nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
 sparkle_scene = Scene([Sparkle, SparkleFade])
-gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
+# gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
+gradient_scene = Scene([
+    Hoop(offset=0, speed=0.1, hue=0),
+    Hoop(offset=1/4.0, speed=0.1, hue=1/3.0),
+    Hoop(offset=2/4.0, speed=0.1, hue=2/3.0),
+    Hoop(offset=3/4.0, speed=0.1, saturation=0),
+])
 tunnel_scene = Scene(Tunnel)
 hoops_scene = Scene(Hoop for _ in range(3))
 drips_scene = Scene(Drips for _ in range(10))
