@@ -32,10 +32,6 @@ class Pixel(object):
             return self.angle
         raise AttributeError(name)
 
-    @property
-    def radius(self):
-        return PixelStrip.radius(self.index)
-
     def angle_from(self, angle):
         d = abs(self.angle - angle)
         return min(d % 360, -d % 360)
@@ -62,14 +58,20 @@ class PixelStrip(object):
     def pixels_near_angle_(angle):
         a0 = None
         da0 = None
+        y0 = None
         for pixel in PixelStrip.pixels():
             a = pixel.angle_from(angle)
             if a0 is not None:
                 da = a - a0
-                if da0 is not None and da0 <= 0 and da >= 0:
+                if da0 <= 0 and 0 <= da:
                     ix = pixel.index
-                    if a0 < a: ix -= 1
-                    yield Pixel(ix)
+                    if a0 < a:
+                        if y0 != ix - 1:
+                            y0 = ix - 1
+                            yield Pixel(ix - 1)
+                    else:
+                        y0 = ix
+                        yield Pixel(ix)
                 da0 = da
             a0 = a
 

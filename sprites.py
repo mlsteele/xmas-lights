@@ -52,6 +52,28 @@ class EveryNth(Sprite):
             x = bound(offset + self.skip * i)
             strip.addPixelHSV(x, 0, 0, self.v)
 
+class Hoop(Sprite):
+    def __init__(self):
+        self.radius = random.random()
+        self.hue = random.random()
+        self.speed = random.randrange(1, 3) * 0.1
+        # each ring is a tuple of start_index, end_index
+        indices = list(p.index for p in PixelStrip.pixels_near_angle(180))
+        self.ring_indices = zip(indices, indices[1:])
+        self.radii = [(PixelStrip.radius(i0) + PixelStrip.radius(i1)) / 2 for i0, i1 in self.ring_indices]
+
+    def render(self, strip, t):
+        r0 = (self.radius + self.speed * t) % 1
+        ring_distances = [abs(r - r0) for r in self.radii]
+        from operator import itemgetter
+        closest = [i for i, _ in sorted(enumerate(ring_distances), key=itemgetter(1))[:2]]
+        d_sum = sum(ring_distances[i] for i in closest)
+        for i, x0, x1 in ((i,) + self.ring_indices[i] for i in closest):
+            h = self.hue
+            v = ring_distances[i] / d_sum
+            for x in xrange(x0, x1):
+                strip.addPixelHSV(x, h, 0.5, 1 - v)
+
 class Sparkle(Sprite):
     def render(self, strip, t):
         for i in xrange(PixelStrip.count):
@@ -126,7 +148,7 @@ class Drips(Sprite):
 
     def render(self, strip, t):
         for pixel in PixelStrip.pixels_near_angle(self.angle):
-            dr = abs(pixel.radius - self.radius)
+            dr = abs(PixelStrip.radius(pixel.index) - self.radius)
             b = (1 - dr) ** 6
             strip.addPixelHSV(pixel.index, self.hue, 0, b)
 

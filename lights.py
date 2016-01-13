@@ -49,6 +49,7 @@ nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
 sparkle_scene = Scene([Sparkle, SparkleFade])
 gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
 tunnel_scene = Scene(Tunnel)
+hoops_scene = Scene(Hoop for _ in range(3))
 drips_scene = Scene(Drips for _ in range(10))
 game_scene = Scene(InteractiveWalk)
 
@@ -105,7 +106,7 @@ class SlaveMode(Sprite):
         strip.leds = self.pixels
         self.pixels = None
 
-attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene})
+attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene, hoops_scene})
 game_mode    = Mode({game_scene})
 slave_mode   = SlaveMode()
 
