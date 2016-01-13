@@ -169,6 +169,7 @@ this repository to the application.
 
 ## Credits
 
-`apa102.py` is adapted from Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library.
+`apa102.py` no longer uses Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library,
+but it was helpful traiing wheels for getting started.
 
 An earlier version used the Adafruit_DotStar_Pi library. Erzberger's library is both pure Python and faster.
