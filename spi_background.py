@@ -6,7 +6,6 @@ import cPickle as pickle
 try:
     import spidev
 except ImportError:
-    print "spidev not found; using simulator"
     import spidev_sim as spidev
 
 logger = logging.getLogger("spidev")

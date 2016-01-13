@@ -16,10 +16,10 @@ GAMMA = 2.5
 SPI_MAX_SPEED_HZ = 8000000
 
 class APA102:
-    def __init__(self, count, bus=0, device=1, master=True):
+    def __init__(self, count, bus=0, device=1, multiprocessing=False):
         self.count = count
         self.spi = None
-        if master:
+        if multiprocessing:
             self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=SPI_MAX_SPEED_HZ)
         else:
             self.spi = spi = spidev.SpiDev()
