@@ -1,4 +1,6 @@
 import random, math, time
+import numpy
+from colorsys import hsv_to_rgb
 from operator import itemgetter
 from led_geometry import PixelStrip
 
@@ -30,28 +32,40 @@ class Snake(Sprite):
         brightness = self.brightness
         length = self.length
         x = int(offset)
-        for i in xrange(self.length):
-            h, v = 0.5 * bound(self.hue_offset + offset + i) / PixelStrip.count, brightness * i / length
-            strip.addPixelHSV(bound(x), h, self.saturation, v)
-            x += 1
-        # adds ~4% overhead
-        f, x = math.modf(offset + self.length)
-        if f > 0:
-            strip.addPixelHSV(bound(int(x)), h, self.saturation, 1)
+
+        rgbs = numpy.zeros((self.length, 3))
+        h = 0.5 * bound(self.hue_offset + offset) / PixelStrip.count
+        rgbs[:,:] = hsv_to_rgb(h, self.saturation, 1)
+        brightness = numpy.arange(0, self.length) / float(self.length)
+        rgbs[:,0] *= brightness
+        rgbs[:,1] *= brightness
+        rgbs[:,2] *= brightness
+        strip.addPixels(x % PixelStrip.count, rgbs)
+
+        # for i in xrange(self.length):
+        #     h, v = 0.5 * bound(self.hue_offset + offset + i) / PixelStrip.count, brightness * i / length
+        #     strip.addPixelHSV(bound(x), h, self.saturation, v)
+        #     x += 1
+
+        # # adds ~4% overhead
+        # f, x = math.modf(offset + self.length)
+        # if f > 0:
+        #     strip.addPixelHSV(bound(int(x)), h, self.saturation, 1)
 
 class EveryNth(Sprite):
     def __init__(self, offset=0, speed=0.25, factor=0.02, v=0.5):
         self.num = int(PixelStrip.count * factor)
-        self.skip = int(PixelStrip.count / self.num)
+        self.spacing = PixelStrip.count / self.num
         self.speed = 60.0 * speed
         self.offset = float(offset)
         self.v = v
 
     def render(self, strip, t):
-        offset = (self.offset + self.speed * t)
+        offset = self.offset + self.speed * t
+        r, g, b = hsv_to_rgb(0, 0, self.v)
         for i in xrange(self.num):
-            x = bound(offset + self.skip * i)
-            strip.addPixelHSV(x, 0, 0, self.v)
+            x = bound(offset + self.spacing * i)
+            strip.addPixelRGB(x, r, g, b)
 
 class Hoop(Sprite):
     def __init__(self, hue=None, saturation=0.5, offset=None, speed=None):

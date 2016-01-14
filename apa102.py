@@ -70,6 +70,28 @@ class APA102:
     def addPixelRangeHSV(self, x0, x1, h, s, v):
         self.addPixelRangeRGB(x0, x1, *hsv_to_rgb(h, s, v))
 
+    """ This increments each of the pixels by the values in `rgbs`.
+
+    Parameters
+    ----------
+    x0 : int
+      Index of the first pixel.
+    rgbs : numpy.ndarray([n, 3])
+    """
+    def addPixels(self, x0, rgbs):
+        leds = self.leds
+        n = leds.shape[0]
+        x1 = x0 + rgbs.shape[0]
+        if x1 < 0 or n <= x0:
+            return
+        if x0 < 0:
+            rgbs = rgbs[-x0:]
+            x0 = 0
+        if x1 > n:
+            x1 = n
+            rgbs = rgbs[:x1-x0,:]
+        leds[x0:x1,1:] += numpy.fliplr(rgbs)
+
     def show(self):
         bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype(int)
         bytes[::4] = 0xff
