@@ -1,4 +1,4 @@
-import logging
+import logging, os
 from multiprocessing import Process, Queue
 import cPickle as pickle
 
@@ -9,6 +9,8 @@ except ImportError:
     import spidev_sim as spidev
 
 logger = logging.getLogger("spidev")
+if "spidev" in os.environ.get("DEBUG", "").split(","):
+    logger.setLevel(logging.INFO)
 
 class SpiMaster:
     def __init__(self, **kwargs):

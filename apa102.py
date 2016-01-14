@@ -1,4 +1,4 @@
-import logging, math, numpy
+import logging, math, numpy, os
 from colorsys import hsv_to_rgb
 from spi_background import SpiMaster
 
@@ -10,13 +10,14 @@ except ImportError:
     import spidev_sim as spidev
 
 logger = logging.getLogger("apa102")
-# logger.setLevel(logging.INFO)
+if "apa102" in os.environ.get("DEBUG", "").split(","):
+    logger.setLevel(logging.INFO)
 
 GAMMA = 2.5
 SPI_MAX_SPEED_HZ = 8000000
 
 class APA102:
-    def __init__(self, count, bus=0, device=1, multiprocessing=False):
+    def __init__(self, count, bus=0, device=1, multiprocessing=True):
         self.count = count
         self.spi = None
         if multiprocessing:
