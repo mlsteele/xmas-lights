@@ -16,7 +16,8 @@ class SpiMaster:
     def __init__(self, **kwargs):
         self.frame_no = 0
         self.queue = queue = Queue(1)
-        self.p = p = Process(target=SpiSlave.run, args=(queue, kwargs))
+        self.p = p = Process(name='spi_slave', target=SpiWorker.run, args=(queue, kwargs))
+        p.daemon = True
         p.start()
 
     def xfer2(self, bytes):
@@ -28,11 +29,11 @@ class SpiMaster:
         self.queue.put("close")
         self.p.join()
 
-class SpiSlave:
+class SpiWorker:
     @staticmethod
     def run(q, initargs):
-        logger.info('creating SPI slave')
-        instance = SpiSlave(q, **initargs)
+        logger.info('creating SPI worker')
+        instance = SpiWorker(q, **initargs)
         while True:
             item = q.get()
             if isinstance(item, str) and item == "close":
