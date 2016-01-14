@@ -7,13 +7,13 @@ import yaml
 # source: http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
 # This is faster than explicitly memoizing into a list or array.
 def memoize(f):
-    class memodict(dict):
+    class MemoDict(dict):
         __slots__ = ()
 
         def __missing__(self, key):
             self[key] = ret = f(key)
             return ret
-    return memodict().__getitem__
+    return MemoDict().__getitem__
 
 with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)

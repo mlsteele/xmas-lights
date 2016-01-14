@@ -44,17 +44,17 @@ class Snake(Sprite):
         rgbs[:, 0] *= brightness
         rgbs[:, 1] *= brightness
         rgbs[:, 2] *= brightness
-        strip.addPixels(x % PixelStrip.count, rgbs)
+        strip.add_rgb_array(x % PixelStrip.count, rgbs)
 
         # for i in xrange(length):
         #     h, v = 0.5 * bound(self.hue_offset + offset + i) / PixelStrip.count, brightness * i / length
-        #     strip.addPixelHSV(bound(x), h, self.saturation, v)
+        #     strip.add_hsv(bound(x), h, self.saturation, v)
         #     x += 1
 
         # # adds ~4% overhead
         # f, x = math.modf(offset + length)
         # if f > 0:
-        #     strip.addPixelHSV(bound(int(x)), h, self.saturation, 1)
+        #     strip.add_hsv(bound(int(x)), h, self.saturation, 1)
 
 
 class EveryNth(Sprite):
@@ -70,7 +70,7 @@ class EveryNth(Sprite):
         r, g, b = hsv_to_rgb(0, 0, self.v)
         for i in xrange(self.num):
             x = bound(offset + self.spacing * i)
-            strip.addPixelRGB(x, r, g, b)
+            strip.add_rgb(x, r, g, b)
 
 
 class Hoop(Sprite):
@@ -97,14 +97,14 @@ class Hoop(Sprite):
         h = self.hue
         s = self.saturation
         for v, x0, x1 in ((vs[i],) + self.ring_indices[i] for i in closest):
-            strip.addPixelRangeHSV(x0, x1, h, s, v)
+            strip.add_range_hsv(x0, x1, h, s, v)
 
 
 class Sparkle(Sprite):
     def render(self, strip, t):
         for i in xrange(PixelStrip.count):
             if random.random() > 0.999:
-                strip.addPixelHSV(i, random.random(), 0.3, random.random())
+                strip.add_hsv(i, random.random(), 0.3, random.random())
 
 
 class SparkleFade(Sprite):
@@ -142,7 +142,7 @@ class SparkleFade(Sprite):
             age = time.time() - activation_time
             v_factor = 1 - (age / self.max_age)
             v = v_factor * self.max_v
-            strip.addPixelHSV(i, 0, 0.0, v)
+            strip.add_hsv(i, 0, 0.0, v)
 
 
 class Tunnel(Sprite):
@@ -159,7 +159,7 @@ class Tunnel(Sprite):
         for pixel in PixelStrip.pixels():
             angle = pixel.angle_from(front_angle)
             if abs(angle - band_angle) < half_width:
-                strip.addPixelHSV(pixel.index, band_angle / 90., 1.0, 0.2)
+                strip.add_hsv(pixel.index, band_angle / 90., 1.0, 0.2)
 
 
 class Drips(Sprite):
@@ -179,7 +179,7 @@ class Drips(Sprite):
         for pixel in PixelStrip.pixels_near_angle(self.angle):
             dr = abs(PixelStrip.radius(pixel.index) - self.radius)
             b = (1 - dr) ** 6
-            strip.addPixelHSV(pixel.index, self.hue, 0, b)
+            strip.add_hsv(pixel.index, self.hue, 0, b)
 
 
 class Predicate(Sprite):
@@ -189,7 +189,7 @@ class Predicate(Sprite):
     def render(self, strip, t):
         for i in xrange(PixelStrip.count):
             if self.f(i):
-                strip.addPixelHSV(i, 0, 0, 0.04)
+                strip.add_hsv(i, 0, 0, 0.04)
 
 
 class InteractiveWalk(Sprite):
@@ -207,4 +207,4 @@ class InteractiveWalk(Sprite):
     def render(self, strip, t):
         for i in xrange(self.pos - self.radius, self.pos + self.radius):
             i = bound(i)
-            strip.addPixelHSV(i, 0.3, 0.4, 0.2)
+            strip.add_hsv(i, 0.3, 0.4, 0.2)

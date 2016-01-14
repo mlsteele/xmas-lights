@@ -8,8 +8,8 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger('messages')
 
 
-def publish(messageType, **payload):
-    payload['type'] = messageType
+def publish(mtype, **payload):
+    payload['type'] = mtype
     logger.info('publish topic=%s payload=%s', mqtt_config.TOPIC, payload)
     mqtt_publish.single(mqtt_config.TOPIC,
                         payload=json.dumps(payload),

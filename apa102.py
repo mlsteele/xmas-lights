@@ -36,7 +36,7 @@ class APA102:
     def clear(self):
         self.leds[:, :] = 0.0
 
-    def setPixelRGB(self, x, r, g, b):
+    def set_rgb(self, x, r, g, b):
         if 0 <= x < self.count:
             # Slower alternatives:
             #   pixel = self.leds[x]; pixel[1] = g; etc. # somewhat slower
@@ -46,14 +46,14 @@ class APA102:
             leds[x, 2] = b
             leds[x, 3] = r
 
-    def addPixelRGB(self, x, r, g, b):
+    def add_rgb(self, x, r, g, b):
         if isinstance(x, float):
             f, x = math.modf(x)
             x = int(x)
             f = 1.0 - f
-            self.addPixelRGB(x, f * r, f * g, f * b)
+            self.add_rgb(x, f * r, f * g, f * b)
             f = 1.0 - f
-            self.addPixelRGB(x + 1, f * r, f * g, f * b)
+            self.add_rgb(x + 1, f * r, f * g, f * b)
             return
         if 0 <= x < self.count:
             # The following is much faster than self.leds[x,1:] += [g, b, r]
@@ -62,17 +62,17 @@ class APA102:
             led[2] += b
             led[3] += r
 
-    def setPixelHSV(self, x, h, s, v):
-        self.setPixelRGB(x, *hsv_to_rgb(h, s, v))
+    def set_hsv(self, x, h, s, v):
+        self.set_rgb(x, *hsv_to_rgb(h, s, v))
 
-    def addPixelHSV(self, x, h, s, v):
-        self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
+    def add_hsv(self, x, h, s, v):
+        self.add_rgb(x, *hsv_to_rgb(h, s, v))
 
-    def addPixelRangeRGB(self, x0, x1, r, g, b):
+    def add_range_rgb(self, x0, x1, r, g, b):
         self.leds[x0:x1, 1:] += [g, b, r]
 
-    def addPixelRangeHSV(self, x0, x1, h, s, v):
-        self.addPixelRangeRGB(x0, x1, *hsv_to_rgb(h, s, v))
+    def add_range_hsv(self, x0, x1, h, s, v):
+        self.add_range_rgb(x0, x1, *hsv_to_rgb(h, s, v))
 
     """ This increments each of the pixels by the values in `rgbs`.
 
@@ -82,7 +82,7 @@ class APA102:
       Index of the first pixel.
     rgbs : numpy.ndarray([n, 3])
     """
-    def addPixels(self, x0, rgbs):
+    def add_rgb_array(self, x0, rgbs):
         leds = self.leds
         n = leds.shape[0]
         x1 = x0 + rgbs.shape[0]

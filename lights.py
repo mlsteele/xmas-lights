@@ -24,13 +24,13 @@ strip = apa102.APA102(PixelStrip.count)
 # A Scene is just a Sprite that composes a set of underlying sprites
 class Scene(Sprite):
     def __init__(self, children=[], name=None):
-        def makeSprite(sprite):
+        def make_sprite(sprite):
             if isinstance(sprite, type):
                 sprite = sprite()
             return sprite
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
-        self.children = map(makeSprite, list(children))
+        self.children = map(make_sprite, list(children))
         self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def step(self):
@@ -43,16 +43,16 @@ class Scene(Sprite):
 
 
 def make_multi_scene():
-    snakeCount = 15
-    sprites = list(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(snakeCount))
+    n = 15
+    sprites = list(Snake(offset=i * PixelStrip.count / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
     return Scene(sprites, 'Multi')
 
 
 def make_snakes_scene():
-    snakeCount = 15
-    sprites = [Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(snakeCount)]
+    n = 15
+    sprites = [Snake(offset=i * PixelStrip.count / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     return Scene(sprites, 'Snakes')
 
 empty_scene = Scene([])
@@ -135,11 +135,12 @@ current_mode = attract_mode
 
 
 # Select mode, and print message if the mode has changed.
-def select_mode(mode, switchMessage=None):
+def select_mode(mode, switch_message=None):
     global current_mode
     if current_mode == mode:
         return False
-    print switchMessage
+    if switch_message:
+        print switch_message
     current_mode = mode
     current_mode.next_scene()
     return True
@@ -187,20 +188,20 @@ def handle_action(message):
 
 def handle_message():
     global frame_modifiers
-    
+
     message = get_message()
     if not message:
         return False
 
-    messageType = message['type']
-    if messageType == 'action':
+    mtype = message['type']
+    if mtype == 'action':
         handle_action(message)
-    elif messageType == 'ping':
+    elif mtype == 'ping':
         print 'pong'
-    elif messageType == 'pixels':
+    elif mtype == 'pixels':
         select_mode(slave_mode, 'slave mode')
         slave_mode.pixels = json.loads(str(message['leds']))
-    elif messageType == 'gamekey':
+    elif mtype == 'gamekey':
         frame_modifiers -= set(['stop', 'off'])
         select_mode(game_mode, 'game mode on')
         key, state = message.get('key'), message.get('state')
@@ -214,7 +215,7 @@ def handle_message():
             print 'keys', gamekeys
             game_mode.child.handle_game_keys(gamekeys)
     else:
-        print 'unknown message type:', messageType
+        print 'unknown message type:', mtype
     return True
 
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
