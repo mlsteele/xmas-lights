@@ -2,6 +2,7 @@ import os, sys
 from math import sin, cos, pi
 from led_geometry import PixelStrip
 
+SIMULATED = True
 GAMMA = 2.5
 
 class SpiDev:
@@ -18,7 +19,8 @@ class SpiDev:
         self.ix = 0 # next pixel index
 
     def close(self):
-        pass
+        if self.pygame:
+            self.pygame.quit()
 
     def xfer2(self, values):
         pygame = self.pygame

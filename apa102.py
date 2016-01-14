@@ -20,7 +20,7 @@ class APA102:
     def __init__(self, count, bus=0, device=1, multiprocessing=True):
         self.count = count
         self.spi = None
-        if multiprocessing:
+        if multiprocessing and not hasattr(spidev, 'SIMULATED'):
             self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=SPI_MAX_SPEED_HZ)
         else:
             self.spi = spi = spidev.SpiDev()

@@ -322,5 +322,8 @@ def do_frame(options):
 try:
     args = parser.parse_args()
     main(args)
+except KeyboardInterrupt:
+    strip.clear()
+    strip.show()
 finally:
     strip.close()
