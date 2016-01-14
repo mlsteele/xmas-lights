@@ -44,6 +44,7 @@ def make_snakes_scene():
     sprites = [Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount)]
     return Scene(sprites, 'Snakes')
 
+empty_scene = Scene([])
 multi_scene = make_multi_scene()
 snakes_scene = make_snakes_scene()
 nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
@@ -190,7 +191,7 @@ def handle_message():
                 "fire": False,
             }
             gamekeys[key] = bool(state)
-            print gamekeys
+            print 'keys', gamekeys
             game_mode.child.handle_game_keys(gamekeys)
     else:
         print "unknown message type:", messageType
@@ -203,6 +204,8 @@ parser.add_argument('--pygame', dest='pygame', action='store_true')
 parser.add_argument('--master', dest='master', action='store_true')
 parser.add_argument('--no-sync', dest='no_sync', action='store_true')
 parser.add_argument('--scene', dest='scene', type=str)
+parser.add_argument('--scenes', dest='show', action='store_const', const='scenes')
+parser.add_argument('--sprites', dest='show', action='store_const', const='sprites')
 parser.add_argument('--speed', dest='speed', type=float)
 parser.add_argument('--sprite', dest='sprite', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
@@ -210,6 +213,17 @@ parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store
 
 def main(args):
     global speed
+
+    if args.show == 'scenes':
+        print 'scenes:',
+        print ', '.join(k.replace('_scene', '') for k, v in globals().items() if isinstance(v, Scene))
+        return
+    if args.show == 'sprites':
+        print 'sprites:',
+        print ', '.join(k.replace('_scene', '')
+            for k, v in globals().items()
+            if isinstance(v, Sprite) and not isinstance(v, (Mode, SlaveMode)))
+        return
 
     # FIXME would need to preceed `import apa102` to have an effect
     if args.pygame:
