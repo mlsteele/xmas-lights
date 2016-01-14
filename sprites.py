@@ -186,9 +186,9 @@ class InteractiveWalk(Sprite):
         self.radius = 3
 
     def handle_game_keys(self, keys):
-        if keys["left"]:
+        if keys['left']:
             self.pos -= 1
-        if keys["right"]:
+        if keys['right']:
             self.pos += 1
         self.pos = bound(self.pos)
 

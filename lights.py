@@ -145,56 +145,56 @@ def change_speed_by(factor):
 
 def handle_action(message):
     global current_mode, frame_modifiers, spin_count
-    action = message["action"]
+    action = message['action']
     print 'action', action
-    if action == "next":
+    if action == 'next':
         frame_modifiers -= set(['stop', 'off'])
         current_mode.next_scene()
-    elif action == "toggle":
+    elif action == 'toggle':
         frame_modifiers ^= set(['off'])
-    elif action in ["off", "stop"]:
+    elif action in ['off', 'stop']:
         frame_modifiers.add(action)
-    elif action in ["start", "resume", "on"]:
-        frame_modifiers -= set(["stop", "off"])
-    elif action == "reverse":
-        frame_modifiers ^= set(["reverse"])
-    elif action == "spin":
-        frame_modifiers.add("spin")
+    elif action in ['start', 'resume', 'on']:
+        frame_modifiers -= set(['stop', 'off'])
+    elif action == 'reverse':
+        frame_modifiers ^= set(['reverse'])
+    elif action == 'spin':
+        frame_modifiers.add('spin')
         spin_count = 0
-    elif action == "faster":
+    elif action == 'faster':
         change_speed_by(1.5)
-    elif action == "slower":
+    elif action == 'slower':
         change_speed_by(1 / 1.5)
     else:
-        print "unknown message:", action
+        print 'unknown message:', action
 
 def handle_message():
     message = get_message()
     if not message: return False
 
-    messageType = message["type"]
-    if messageType == "action":
+    messageType = message['type']
+    if messageType == 'action':
         handle_action(message)
-    elif messageType == "ping":
-        print "pong"
-    elif messageType == "pixels":
-        select_mode(slave_mode, "slave mode")
-        slave_mode.pixels = json.loads(str(message["leds"]))
-    elif messageType == "gamekey":
+    elif messageType == 'ping':
+        print 'pong'
+    elif messageType == 'pixels':
+        select_mode(slave_mode, 'slave mode')
+        slave_mode.pixels = json.loads(str(message['leds']))
+    elif messageType == 'gamekey':
         frame_modifiers -= set(['stop', 'off'])
-        select_mode(game_mode, "game mode on")
-        key, state = message.get("key"), message.get("state")
+        select_mode(game_mode, 'game mode on')
+        key, state = message.get('key'), message.get('state')
         if key in gamekeys:
             gamekeys = {
-                "left": False,
-                "right": False,
-                "fire": False,
+                'left': False,
+                'right': False,
+                'fire': False,
             }
             gamekeys[key] = bool(state)
             print 'keys', gamekeys
             game_mode.child.handle_game_keys(gamekeys)
     else:
-        print "unknown message type:", messageType
+        print 'unknown message type:', messageType
     return True
 
 import argparse
@@ -235,7 +235,7 @@ def main(args):
         except NameError:
             scene = None
         if not isinstance(scene, Scene):
-            print >> sys.stderr, "Unknown scene:", args.scene
+            print >> sys.stderr, 'Unknown scene:', args.scene
             exit(1)
         select_mode(Mode({scene}))
 
@@ -245,7 +245,7 @@ def main(args):
         except NameError:
             sprite = None
         if not isinstance(sprite, (type, types.ClassType)) or not issubclass(sprite, Sprite):
-            print >> sys.stderr, "Unknown sprite:", args.sprite
+            print >> sys.stderr, 'Unknown sprite:', args.sprite
             exit(1)
         scene = Scene(sprite)
         select_mode(Mode({scene}))
@@ -254,12 +254,12 @@ def main(args):
         speed = args.speed
 
     if args.no_sync:
-        frame_modifiers.discard("sync")
+        frame_modifiers.discard('sync')
 
     if args.debug_messages:
         logging.getLogger('messages').setLevel(logging.INFO)
 
-    print "Starting."
+    print 'Starting.'
     while True:
         if not args.master:
             handle_message()
@@ -267,12 +267,12 @@ def main(args):
         do_frame(args)
 
         if args.master:
-            publish("pixels", leds=json.dumps(strip.leds))
+            publish('pixels', leds=json.dumps(strip.leds))
 
 last_frame_printed_t = time.time()
 frame_deltas = [] # FIFO of the last 60 frame latencies
 
-frame_modifiers = set(["sync"])
+frame_modifiers = set(['sync'])
 spin_count = 0
 
 IDEAL_FRAME_DELTA_T = 1.0 / 60
@@ -284,23 +284,23 @@ def do_frame(options):
     global last_frame_t, last_frame_printed_t, spin_count, synthetic_time
 
     # Render the current frame
-    if "stop" not in frame_modifiers:
+    if 'stop' not in frame_modifiers:
         strip.clear()
-    if "stop" not in frame_modifiers and "off" not in frame_modifiers:
+    if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
         current_mode.step()
         current_mode.render(strip, synthetic_time)
         dtime = IDEAL_FRAME_DELTA_T * speed
-        if "reverse" in frame_modifiers:
+        if 'reverse' in frame_modifiers:
             dtime *= -1
         synthetic_time += dtime
 
     # Apply modifiers
-    if "spin" in frame_modifiers:
+    if 'spin' in frame_modifiers:
         strip.leds = strip.leds[spin_count:] + strip.leds[:spin_count]
         spin_count += 3 * 4
         if spin_count >= 450:
-            frame_modifiers.discard("spin")
-    if "invert" in frame_modifiers:
+            frame_modifiers.discard('spin')
+    if 'invert' in frame_modifiers:
         for i in range(len(strip.leds)):
             if i % 4:
                 # strip.leds[i] = 16 - strip.leds[i] * 16 / 256
@@ -320,7 +320,7 @@ def do_frame(options):
         frame_deltas.pop(0)
     if options.print_frame_rate:
         if frame_t - (last_frame_printed_t or frame_t) > 1:
-            print "fps: %2.1f" % (1 / (sum(frame_deltas) / len(frame_deltas)))
+            print 'fps: %2.1f' % (1 / (sum(frame_deltas) / len(frame_deltas)))
             last_frame_printed_t = frame_t
 
     # Slow down to target frame rate
@@ -328,7 +328,7 @@ def do_frame(options):
         if current_mode != slave_mode and 'sync' in frame_modifiers:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
-        print "Frame lagging. Time to optimize."
+        print 'Frame lagging. Time to optimize.'
 
     last_frame_t = time.time()
     strip.show()

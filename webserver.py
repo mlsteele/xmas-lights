@@ -54,18 +54,18 @@ def slack():
 
 # Game server
 
-@app.route("/")
+@app.route('/')
 def index():
-    return send_from_directory("static", "index.html")
+    return send_from_directory('static', 'index.html')
 
-@socketio.on("ctl", namespace="/ctl")
+@socketio.on('ctl', namespace='/ctl')
 def ctl_message(message):
     payload = {
-        "key": message.get("key"),
-        "state": bool(message.get("state")),
+        'key': message.get('key'),
+        'state': bool(message.get('state')),
     }
     print payload
-    publish("gamekey", **payload)
+    publish('gamekey', **payload)
 
 if __name__ == '__main__':
     socketio.run(app, use_reloader=True)

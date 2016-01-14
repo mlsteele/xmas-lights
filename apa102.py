@@ -6,11 +6,11 @@ from spi_background import SpiMaster
 try:
     import spidev
 except ImportError:
-    print "spidev not found; using simulator"
+    print 'spidev not found; using simulator'
     import spidev_sim as spidev
 
-logger = logging.getLogger("apa102")
-if "apa102" in os.environ.get("DEBUG", "").split(","):
+logger = logging.getLogger('apa102')
+if 'apa102' in os.environ.get('DEBUG', '').split(','):
     logger.setLevel(logging.INFO)
 
 GAMMA = 2.5

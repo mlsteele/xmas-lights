@@ -27,7 +27,7 @@ class Pixel(object):
 
     # faster than @property
     def __getattr__(self, name):
-        if name == "angle":
+        if name == 'angle':
             self.angle = PixelAngle.angle(self.index)
             return self.angle
         raise AttributeError(name)
