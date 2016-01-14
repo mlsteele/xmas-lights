@@ -1,6 +1,14 @@
 #!/usr/bin/python
 
-import collections, json, logging, os, random, sys, time, types
+import argparse
+import collections
+import json
+import logging
+import os
+import random
+import sys
+import time
+import types
 import apa102
 from messages import get_message
 from publish_message import publish
@@ -9,8 +17,9 @@ from sprites import *
 
 strip = apa102.APA102(PixelStrip.count)
 
-## Scenes
-##
+# Scenes
+#
+
 
 # A Scene is just a Sprite that composes a set of underlying sprites
 class Scene(Sprite):
@@ -32,16 +41,18 @@ class Scene(Sprite):
         for child in self.children:
             child.render(strip, t)
 
+
 def make_multi_scene():
     snakeCount = 15
-    sprites = list(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount))
+    sprites = list(Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(snakeCount))
     sprites.append(EveryNth(factor=0.1, v=0.3))
     sprites.append(SparkleFade(interval=0.08))
     return Scene(sprites, 'Multi')
 
+
 def make_snakes_scene():
     snakeCount = 15
-    sprites = [Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1+(0.3*i))/4*random.choice([1, -1])) for i in range(snakeCount)]
+    sprites = [Snake(offset=i * PixelStrip.count / float(snakeCount), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(snakeCount)]
     return Scene(sprites, 'Snakes')
 
 empty_scene = Scene([])
@@ -52,17 +63,18 @@ sparkle_scene = Scene([Sparkle, SparkleFade])
 # gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
 gradient_scene = Scene([
     Hoop(offset=0, speed=0.1, hue=0),
-    Hoop(offset=1/4.0, speed=0.1, hue=1/3.0),
-    Hoop(offset=2/4.0, speed=0.1, hue=2/3.0),
-    Hoop(offset=3/4.0, speed=0.1, saturation=0),
+    Hoop(offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
+    Hoop(offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
+    Hoop(offset=3 / 4.0, speed=0.1, saturation=0),
 ])
 tunnel_scene = Scene(Tunnel)
 hoops_scene = Scene(Hoop for _ in range(3))
 drips_scene = Scene(Drips for _ in range(10))
 game_scene = Scene(InteractiveWalk)
 
-## Modes
-##
+# Modes
+#
+
 
 # A mode is a sprite that iterates through child sprites.
 class Mode(Sprite):
@@ -97,6 +109,7 @@ class Mode(Sprite):
         if self.current_child:
             self.current_child.render(strip, t)
 
+
 class SlaveMode(Sprite):
     def __init__(self):
         self.pixels = None
@@ -115,10 +128,11 @@ class SlaveMode(Sprite):
         self.pixels = None
 
 attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene, hoops_scene})
-game_mode    = Mode({game_scene})
-slave_mode   = SlaveMode()
+game_mode = Mode({game_scene})
+slave_mode = SlaveMode()
 
 current_mode = attract_mode
+
 
 # Select mode, and print message if the mode has changed.
 def select_mode(mode, switchMessage=None):
@@ -129,6 +143,7 @@ def select_mode(mode, switchMessage=None):
     current_mode = mode
     current_mode.next_scene()
     return True
+
 
 def change_speed_by(factor):
     global speed
@@ -142,6 +157,7 @@ def change_speed_by(factor):
 # angle_offset = lambda: sin(time.time()) * 55
 # angle_width = lambda: 10
 # sprites.append(Predicate(lambda x: angdist(PixelAngle.angle(x), angle_offset()) <= angle_width()))
+
 
 def handle_action(message):
     global current_mode, frame_modifiers, spin_count
@@ -168,9 +184,13 @@ def handle_action(message):
     else:
         print 'unknown message:', action
 
+
 def handle_message():
+    global frame_modifiers
+    
     message = get_message()
-    if not message: return False
+    if not message:
+        return False
 
     messageType = message['type']
     if messageType == 'action':
@@ -197,7 +217,6 @@ def handle_message():
         print 'unknown message type:', messageType
     return True
 
-import argparse
 parser = argparse.ArgumentParser(description='Christmas-Tree Lights.')
 parser.add_argument('--debug-messages', dest='debug_messages', action='store_true')
 parser.add_argument('--pygame', dest='pygame', action='store_true')
@@ -211,6 +230,7 @@ parser.add_argument('--sprite', dest='sprite', type=str)
 parser.add_argument('--warn', dest='warn', action='store_true', help='warn on slow frame rate')
 parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store_true', help='warn on slow frame rate')
 
+
 def main(args):
     global speed
 
@@ -219,10 +239,10 @@ def main(args):
         print ', '.join(k.replace('_scene', '') for k, v in globals().items() if isinstance(v, Scene))
         return
     if args.show == 'sprites':
-        print 'sprites:',
-        print ', '.join(k.replace('_scene', '')
-            for k, v in globals().items()
-            if isinstance(v, Sprite) and not isinstance(v, (Mode, SlaveMode)))
+        names = (k.replace('_scene', '')
+                 for k, v in globals().items()
+                 if isinstance(v, Sprite) and not isinstance(v, (Mode, SlaveMode)))
+        print 'sprites:', ', '.join(names)
         return
 
     # FIXME would need to preceed `import apa102` to have an effect
@@ -270,7 +290,7 @@ def main(args):
             publish('pixels', leds=json.dumps(strip.leds))
 
 last_frame_printed_t = time.time()
-frame_deltas = [] # FIFO of the last 60 frame latencies
+frame_deltas = []  # FIFO of the last 60 frame latencies
 
 frame_modifiers = set(['sync'])
 spin_count = 0
@@ -279,6 +299,7 @@ IDEAL_FRAME_DELTA_T = 1.0 / 60
 speed = 1.0
 last_frame_t = time.time()
 synthetic_time = 0
+
 
 def do_frame(options):
     global last_frame_t, last_frame_printed_t, spin_count, synthetic_time

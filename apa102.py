@@ -1,4 +1,7 @@
-import logging, math, numpy, os
+import logging
+import math
+import numpy
+import os
 from colorsys import hsv_to_rgb
 from spi_background import SpiMaster
 
@@ -16,6 +19,7 @@ if 'apa102' in os.environ.get('DEBUG', '').split(','):
 GAMMA = 2.5
 SPI_MAX_SPEED_HZ = 8000000
 
+
 class APA102:
     def __init__(self, count, bus=0, device=1, multiprocessing=True):
         self.count = count
@@ -30,7 +34,7 @@ class APA102:
         self.clear()
 
     def clear(self):
-        self.leds[:,:] = 0.0
+        self.leds[:, :] = 0.0
 
     def setPixelRGB(self, x, r, g, b):
         if 0 <= x < self.count:
@@ -38,9 +42,9 @@ class APA102:
             #   pixel = self.leds[x]; pixel[1] = g; etc. # somewhat slower
             #   self.leds[x,1:] = [g, b, r] # much slower
             leds = self.leds
-            leds[x,1] = g
-            leds[x,2] = b
-            leds[x,3] = r
+            leds[x, 1] = g
+            leds[x, 2] = b
+            leds[x, 3] = r
 
     def addPixelRGB(self, x, r, g, b):
         if isinstance(x, float):
@@ -65,7 +69,7 @@ class APA102:
         self.addPixelRGB(x, *hsv_to_rgb(h, s, v))
 
     def addPixelRangeRGB(self, x0, x1, r, g, b):
-        self.leds[x0:x1,1:] += [g, b, r]
+        self.leds[x0:x1, 1:] += [g, b, r]
 
     def addPixelRangeHSV(self, x0, x1, h, s, v):
         self.addPixelRangeRGB(x0, x1, *hsv_to_rgb(h, s, v))
@@ -89,8 +93,8 @@ class APA102:
             x0 = 0
         if x1 > n:
             x1 = n
-            rgbs = rgbs[:x1-x0,:]
-        leds[x0:x1,1:] += numpy.fliplr(rgbs)
+            rgbs = rgbs[:x1 - x0, :]
+        leds[x0:x1, 1:] += numpy.fliplr(rgbs)
 
     def show(self):
         bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype(int)

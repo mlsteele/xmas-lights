@@ -1,3 +1,6 @@
+import time
+
+
 class Profiler:
     def __init__(self, name="_"):
         self.name = name

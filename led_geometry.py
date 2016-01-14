@@ -3,18 +3,21 @@ from math import sin, cos, pi
 from functools32 import lru_cache
 import yaml
 
+
 # source: http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
 # This is faster than explicitly memoizing into a list or array.
 def memoize(f):
-  class memodict(dict):
-      __slots__ = ()
-      def __missing__(self, key):
-          self[key] = ret = f(key)
-          return ret
-  return memodict().__getitem__
+    class memodict(dict):
+        __slots__ = ()
+
+        def __missing__(self, key):
+            self[key] = ret = f(key)
+            return ret
+    return memodict().__getitem__
 
 with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)
+
 
 class Pixel(object):
     def __init__(self, index):
@@ -35,6 +38,7 @@ class Pixel(object):
     def angle_from(self, angle):
         d = abs(self.angle - angle)
         return min(d % 360, -d % 360)
+
 
 class PixelStrip(object):
     count = CONFIG['pixels']['count']
@@ -97,6 +101,7 @@ class PixelStrip(object):
         x = 0.5 + radius * cos(angle) / 2.0
         y = 0.5 + radius * sin(angle) / 2.0
         return (x, y)
+
 
 class PixelAngle(object):
     # Map from pixel indices to angles in degrees.

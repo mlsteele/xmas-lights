@@ -1,9 +1,10 @@
-import os, sys
-from math import sin, cos, pi
+import os
+import sys
 from led_geometry import PixelStrip
 
 SIMULATED = True
 GAMMA = 2.5
+
 
 class SpiDev:
     def open(self, port, slave):
@@ -16,7 +17,7 @@ class SpiDev:
         self.width = 600
         self.screen = pygame.display.set_mode((self.width, self.width))
         self.screen.fill((0, 0, 0))
-        self.ix = 0 # next pixel index
+        self.ix = 0  # next pixel index
 
     def close(self):
         if self.pygame:
@@ -33,13 +34,13 @@ class SpiDev:
         width = self.width
         led_size = 5
         ix = self.ix
-        i = 0
         inverse_gamma = 1 / GAMMA
-        while i < len(values):
-            frame = values[i]; i += 1
-            g = values[i]; i += 1
-            b = values[i]; i += 1
-            r = values[i]; i += 1
+        for i in xrange(0, len(values), 4):
+            frame = values[i]
+            g = values[i + 1]
+            b = values[i + 2]
+            r = values[i + 3]
+            i += 4
 
             if frame == 0x0:
                 ix = 0

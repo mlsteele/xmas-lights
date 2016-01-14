@@ -1,7 +1,10 @@
-import logging, os, re, sys
+import logging
+import os
+import re
+import sys
 import flask
-from flask import Flask, abort, request, send_from_directory, abort
-from flask.ext.socketio import SocketIO, emit
+from flask import Flask, abort, request, send_from_directory
+from flask.ext.socketio import SocketIO
 
 from publish_message import publish
 logging.getLogger('messages').setLevel(logging.INFO)
@@ -15,9 +18,9 @@ if os.environ.get('TWILIO_ACCOUNT_SID'):
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-import logging
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
 app.logger.setLevel(logging.DEBUG)
+
 
 def validate_token(token):
     def validate_token_decorator(func):
@@ -30,11 +33,13 @@ def validate_token(token):
 
 # Web hooks
 
+
 @app.route('/ifttt', methods=['POST'])
 @validate_token(os.environ.get('IFTTT_TOKEN'))
 def ifttt():
     publish('action', action=request.form['action'])
     return 'ok'
+
 
 @app.route('/slack', methods=['POST'])
 @validate_token(os.environ.get('SLACK_WEBHOOK_TOKEN'))
@@ -44,9 +49,9 @@ def slack():
     if re.match(SMS_TEXT_RE, message):
         body = 'treelights' + message
         twilio.messages.create(
-            from_ = os.environ['TWILIO_SMS_NUMBER'],
-            to    = os.environ['TWILIO_SMS_TARGET_NUMBER'],
-            body  = body,
+            from_=os.environ['TWILIO_SMS_NUMBER'],
+            to=os.environ['TWILIO_SMS_TARGET_NUMBER'],
+            body=body,
         )
     else:
         publish('action', action=message)
@@ -54,9 +59,11 @@ def slack():
 
 # Game server
 
+
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
+
 
 @socketio.on('ctl', namespace='/ctl')
 def ctl_message(message):

@@ -1,4 +1,5 @@
-import logging, os
+import logging
+import os
 from multiprocessing import Process, Queue
 import cPickle as pickle
 
@@ -11,6 +12,7 @@ except ImportError:
 logger = logging.getLogger("spidev")
 if "spidev" in os.environ.get("DEBUG", "").split(","):
     logger.setLevel(logging.INFO)
+
 
 class SpiMaster:
     def __init__(self, **kwargs):
@@ -28,6 +30,7 @@ class SpiMaster:
     def close(self):
         self.queue.put("close")
         self.p.join()
+
 
 class SpiWorker:
     @staticmethod
