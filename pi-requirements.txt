@@ -3,6 +3,6 @@
 
 numpy>=1.10.1
 paho-mqtt>=1.1
+python-periphery>=1.0.0
 pyyaml>=3.11
-spidev>=3.0
 functools32>=3.2.3

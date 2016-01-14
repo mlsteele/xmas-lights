@@ -5,9 +5,9 @@ import cPickle as pickle
 
 # TODO DRY apa102.py
 try:
-    import spidev
+    import periphery
 except ImportError:
-    import spidev_sim as spidev
+    import spidev_sim as periphery
 
 logger = logging.getLogger("spidev")
 if "spidev" in os.environ.get("DEBUG", "").split(","):
@@ -21,6 +21,9 @@ class SpiMaster:
         self.p = p = Process(name='spi_slave', target=SpiWorker.run, args=(queue, kwargs))
         p.daemon = True
         p.start()
+
+    def transfer(self, bytes):
+        self.xfer2(bytes)
 
     def xfer2(self, bytes):
         self.frame_no += 1
@@ -48,14 +51,12 @@ class SpiWorker:
     def __init__(self, queue, bus=0, device=1, max_speed_hz=0):
         self.frame_no = 0
         self.queue = queue
-        self.spi = spi = spidev.SpiDev()
-        spi.open(bus, device)
-        spi.max_speed_hz = max_speed_hz
+        self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, max_speed_hz)
 
     def xfer2(self, bytes):
         self.frame_no += 1
         logger.info('send frame #%d', self.frame_no)
-        self.spi.xfer2(bytes)
+        self.spi.transfer(bytes)
 
     def close(self):
         self.spi.close()

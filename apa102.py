@@ -7,10 +7,10 @@ from spi_background import SpiMaster
 
 # TODO DRY spi_background.py
 try:
-    import spidev
+    import periphery
 except ImportError:
-    print 'spidev not found; using simulator'
-    import spidev_sim as spidev
+    print 'periphery not found; using simulator'
+    import spidev_sim as periphery
 
 logger = logging.getLogger('apa102')
 if 'apa102' in os.environ.get('DEBUG', '').split(','):
@@ -24,12 +24,13 @@ class APA102:
     def __init__(self, count, bus=0, device=1, multiprocessing=True):
         self.count = count
         self.spi = None
-        if multiprocessing and not hasattr(spidev, 'SIMULATED'):
+        if multiprocessing and not hasattr(periphery, 'SIMULATED'):
             self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=SPI_MAX_SPEED_HZ)
         else:
-            self.spi = spi = spidev.SpiDev()
-            spi.open(bus, device)
-            spi.max_speed_hz = SPI_MAX_SPEED_HZ
+            self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, SPI_MAX_SPEED_HZ)
+            # self.spi = spi = spidev.SpiDev()
+            # spi.open(bus, device)
+            # spi.max_speed_hz = SPI_MAX_SPEED_HZ
         self.leds = numpy.zeros((self.count, 4))
         self.clear()
 
@@ -97,12 +98,12 @@ class APA102:
         leds[x0:x1, 1:] += numpy.fliplr(rgbs)
 
     def show(self):
-        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype(int)
+        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype('uint8')
         bytes[::4] = 0xff
-        self.spi.xfer2([0, 0, 0, 0])
-        # the following alternative causes an intermittent stutter:
-        # bytes = numpy.insert(bytes, 0, [0, 0, 0, 0])
-        self.spi.xfer2(bytes.tolist())
+
+        header = numpy.array([0, 0, 0, 0], 'uint8')
+        self.spi.transfer(header.tobytes())
+        self.spi.transfer(bytes.tobytes())
 
     def close(self):
         self.spi.close()

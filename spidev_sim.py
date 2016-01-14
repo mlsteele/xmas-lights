@@ -1,13 +1,25 @@
 import os
 import sys
+import numpy as np
 from led_geometry import PixelStrip
 
 SIMULATED = True
 GAMMA = 2.5
 
 
+class SPI:
+    def __init__(self, path, mode, max_speed_hz):
+        self.spidev = SpiDev()
+        self.spidev.open(0, 0)
+
+    def transfer(self, bytes):
+        self.spidev.xfer2(np.fromstring(bytes, 'uint8'))
+
+    def close(self):
+        self.spidev.close()
+
 class SpiDev:
-    def open(self, port, slave):
+    def open(self, bus, device):
         self.pygame = None
         if not os.environ.get('SPIDEV_PYGAME'):
             return
@@ -23,7 +35,7 @@ class SpiDev:
         if self.pygame:
             self.pygame.quit()
 
-    def xfer2(self, values):
+    def xfer2(self, bytes):
         pygame = self.pygame
         if not pygame:
             return
@@ -35,11 +47,11 @@ class SpiDev:
         led_size = 5
         ix = self.ix
         inverse_gamma = 1 / GAMMA
-        for i in xrange(0, len(values), 4):
-            frame = values[i]
-            g = values[i + 1]
-            b = values[i + 2]
-            r = values[i + 3]
+        for i in xrange(0, len(bytes), 4):
+            frame = bytes[i]
+            g = bytes[i + 1]
+            b = bytes[i + 2]
+            r = bytes[i + 3]
             i += 4
 
             if frame == 0x0:
