@@ -1,7 +1,7 @@
 import logging
 import math
-import numpy
 import os
+import numpy as np
 from colorsys import hsv_to_rgb
 from spi_background import SpiMaster
 
@@ -31,7 +31,7 @@ class APA102:
             # self.spi = spi = spidev.SpiDev()
             # spi.open(bus, device)
             # spi.max_speed_hz = SPI_MAX_SPEED_HZ
-        self.leds = numpy.zeros((self.count, 4))
+        self.leds = np.zeros((self.count, 4))
         self.clear()
 
     def clear(self):
@@ -81,7 +81,7 @@ class APA102:
     ----------
     x0 : int
       Index of the first pixel.
-    rgbs : numpy.ndarray([n, 3])
+    rgbs : np.ndarray([n, 3])
     """
     def add_rgb_array(self, x0, rgbs):
         leds = self.leds
@@ -95,13 +95,13 @@ class APA102:
         if x1 > n:
             x1 = n
             rgbs = rgbs[:x1 - x0, :]
-        leds[x0:x1, 1:] += numpy.fliplr(rgbs)
+        leds[x0:x1, 1:] += np.fliplr(rgbs)
 
     def show(self):
-        bytes = numpy.ravel(numpy.round(255 * numpy.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype('uint8')
+        bytes = np.ravel(np.round(255 * np.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype('uint8')
         bytes[::4] = 0xff
 
-        header = numpy.array([0, 0, 0, 0], 'uint8')
+        header = np.array([0, 0, 0, 0], 'uint8')
         self.spi.transfer(header.tobytes())
         self.spi.transfer(bytes.tobytes())
 

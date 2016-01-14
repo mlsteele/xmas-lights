@@ -1,6 +1,6 @@
 import random
 import time
-import numpy
+import numpy as np
 from colorsys import hsv_to_rgb
 from operator import itemgetter
 from led_geometry import PixelStrip
@@ -37,10 +37,10 @@ class Snake(Sprite):
         length = self.length
         x = int(offset)
 
-        rgbs = numpy.zeros((length, 3))
+        rgbs = np.zeros((length, 3))
         h = 0.5 * bound(self.hue_offset + offset) / PixelStrip.count
         rgbs[:, :] = hsv_to_rgb(h, self.saturation, 1)
-        brightness = numpy.arange(0, length) / float(length)
+        brightness = np.arange(0, length) / float(length)
         rgbs[:, 0] *= brightness
         rgbs[:, 1] *= brightness
         rgbs[:, 2] *= brightness
