@@ -7,18 +7,19 @@ SIMULATED = True
 GAMMA = 2.5
 
 
-class SPI:
-    def __init__(self, path, mode, max_speed_hz):
+class SPI(object):
+    def __init__(self, devpath, mode, max_speed_hz):
         self.spidev = SpiDev()
         self.spidev.open(0, 0)
 
-    def transfer(self, bytes):
-        self.spidev.xfer2(np.fromstring(bytes, 'uint8'))
+    def transfer(self, data):
+        self.spidev.xfer2(np.fromstring(data, 'uint8'))
 
     def close(self):
         self.spidev.close()
 
-class SpiDev:
+
+class SpiDev(object):
     def open(self, bus, device):
         self.pygame = None
         if not os.environ.get('SPIDEV_PYGAME'):

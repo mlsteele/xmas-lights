@@ -14,7 +14,7 @@ if "spidev" in os.environ.get("DEBUG", "").split(","):
     logger.setLevel(logging.INFO)
 
 
-class SpiMaster:
+class SpiMaster(object):
     def __init__(self, **kwargs):
         self.frame_no = 0
         self.queue = queue = Queue(1)
@@ -22,20 +22,20 @@ class SpiMaster:
         p.daemon = True
         p.start()
 
-    def transfer(self, bytes):
-        self.xfer2(bytes)
+    def transfer(self, data):
+        self.xfer2(data)
 
-    def xfer2(self, bytes):
+    def xfer2(self, data):
         self.frame_no += 1
         logger.info('enqueue frame #%d', self.frame_no)
-        self.queue.put(pickle.dumps(bytes, protocol=-1))
+        self.queue.put(pickle.dumps(data, protocol=-1))
 
     def close(self):
         self.queue.put("close")
         self.p.join()
 
 
-class SpiWorker:
+class SpiWorker(object):
     @staticmethod
     def run(q, initargs):
         logger.info('creating SPI worker')
@@ -45,18 +45,18 @@ class SpiWorker:
             if isinstance(item, str) and item == "close":
                 instance.close()
                 return
-            bytes = pickle.loads(item)
-            instance.xfer2(bytes)
+            data = pickle.loads(item)
+            instance.xfer2(data)
 
     def __init__(self, queue, bus=0, device=1, max_speed_hz=0):
         self.frame_no = 0
         self.queue = queue
         self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, max_speed_hz)
 
-    def xfer2(self, bytes):
+    def xfer2(self, data):
         self.frame_no += 1
         logger.info('send frame #%d', self.frame_no)
-        self.spi.transfer(bytes)
+        self.spi.transfer(data)
 
     def close(self):
         self.spi.close()

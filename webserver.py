@@ -28,7 +28,7 @@ def validate_token(token):
             if token != request.form['token']:
                 return abort(403)
             return func(*args, **kwargs)
-        return (func_wrapper if token else func)
+        return func_wrapper if token else func
     return validate_token_decorator
 
 # Web hooks

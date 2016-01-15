@@ -117,6 +117,7 @@ class PixelAngle(object):
     @memoize
     def angle(i):
         """Get the angle of a pixel.
+
         Estimate by linear approximation between two closest known neighbors.
         """
         angle = PixelAngle.REF_ANGLES.get(i)

@@ -1,8 +1,8 @@
 import logging
 import math
 import os
-import numpy as np
 from colorsys import hsv_to_rgb
+import numpy as np
 from spi_background import SpiMaster
 
 # TODO DRY spi_background.py
@@ -20,7 +20,7 @@ GAMMA = 2.5
 SPI_MAX_SPEED_HZ = 8000000
 
 
-class APA102:
+class APA102(object):
     def __init__(self, count, bus=0, device=1, multiprocessing=True):
         self.count = count
         self.spi = None

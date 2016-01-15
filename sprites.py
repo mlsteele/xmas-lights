@@ -1,8 +1,8 @@
 import random
 import time
-import numpy as np
 from colorsys import hsv_to_rgb
 from operator import itemgetter
+import numpy as np
 from led_geometry import PixelStrip
 
 
@@ -108,14 +108,15 @@ class Sparkle(Sprite):
 
 
 class SparkleFade(Sprite):
-    def __init__(self, interval=0.01, max_age=.8, max_v=0.5):
-        """Sparkles that fade over time.
+    """Sparkles that fade over time.
 
-        Args:
-            interval: How often a new spark appears.
-            max_age: Maximum age of a sparkle in seconds.
-            max_v: Maximum brightness.
-        """
+    Attributes:
+        interval (float): How often a new spark appears.
+        max_age (float): Maximum age of a sparkle in seconds.
+        max_v (float): Maximum brightness.
+    """
+
+    def __init__(self, interval=0.01, max_age=.8, max_v=0.5):
         self.interval = float(interval)
         self.max_age = float(max_age)
         self.max_v = float(max_v)

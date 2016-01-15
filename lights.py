@@ -13,7 +13,7 @@ import apa102
 from messages import get_message
 from publish_message import publish
 from led_geometry import PixelStrip
-from sprites import *
+from sprites import Sprite, Drips, EveryNth, Hoop, InteractiveWalk, Snake, Sparkle, SparkleFade, Tunnel
 
 strip = apa102.APA102(PixelStrip.count)
 
@@ -23,14 +23,14 @@ strip = apa102.APA102(PixelStrip.count)
 
 # A Scene is just a Sprite that composes a set of underlying sprites
 class Scene(Sprite):
-    def __init__(self, children=[], name=None):
+    def __init__(self, children=(), name=None):
         def make_sprite(sprite):
             if isinstance(sprite, type):
                 sprite = sprite()
             return sprite
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
-        self.children = map(make_sprite, list(children))
+        self.children = [make_sprite(child) for child in children]
         self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def step(self):
@@ -78,7 +78,7 @@ game_scene = Scene(InteractiveWalk)
 
 # A mode is a sprite that iterates through child sprites.
 class Mode(Sprite):
-    def __init__(self, children={}):
+    def __init__(self, children=frozenset()):
         self.children = frozenset(children)
         self.current_child = None
         if len(self.children) == 1:
@@ -161,7 +161,7 @@ def change_speed_by(factor):
 
 
 def handle_action(message):
-    global current_mode, frame_modifiers, spin_count
+    global frame_modifiers, spin_count
     action = message['action']
     print 'action', action
     if action == 'next':
@@ -205,12 +205,12 @@ def handle_message():
         frame_modifiers -= set(['stop', 'off'])
         select_mode(game_mode, 'game mode on')
         key, state = message.get('key'), message.get('state')
+        gamekeys = {
+            'left': False,
+            'right': False,
+            'fire': False,
+        }
         if key in gamekeys:
-            gamekeys = {
-                'left': False,
-                'right': False,
-                'fire': False,
-            }
             gamekeys[key] = bool(state)
             print 'keys', gamekeys
             game_mode.child.handle_game_keys(gamekeys)
@@ -251,20 +251,14 @@ def main(args):
         os.environ['SPIDEV_PYGAME'] = '1'
 
     if args.scene:
-        try:
-            scene = eval(args.scene + '_scene')
-        except NameError:
-            scene = None
+        scene = globals().get(args.scene + '_scene', None)
         if not isinstance(scene, Scene):
             print >> sys.stderr, 'Unknown scene:', args.scene
             exit(1)
         select_mode(Mode({scene}))
 
     if args.sprite:
-        try:
-            sprite = eval(args.sprite[0].capitalize() + args.sprite[1:])
-        except NameError:
-            sprite = None
+        sprite = globals().get(args.sprite[0].capitalize() + args.sprite[1:], None)
         if not isinstance(sprite, (type, types.ClassType)) or not issubclass(sprite, Sprite):
             print >> sys.stderr, 'Unknown sprite:', args.sprite
             exit(1)
