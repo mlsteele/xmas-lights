@@ -9,13 +9,12 @@ import random
 import sys
 import time
 import types
-import apa102
 from messages import get_message
 from publish_message import publish
 from led_geometry import PixelStrip
 from sprites import Sprite, Drips, EveryNth, Hoop, InteractiveWalk, Snake, Sparkle, SparkleFade, Tunnel
 
-strip = apa102.APA102(PixelStrip.count)
+strip = PixelStrip()
 
 # Scenes
 #
@@ -26,7 +25,7 @@ class Scene(Sprite):
     def __init__(self, children=(), name=None):
         def make_sprite(sprite):
             if isinstance(sprite, type):
-                sprite = sprite()
+                sprite = sprite(strip)
             return sprite
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
@@ -44,28 +43,28 @@ class Scene(Sprite):
 
 def make_multi_scene():
     n = 15
-    sprites = list(Snake(offset=i * PixelStrip.count / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
-    sprites.append(EveryNth(factor=0.1, v=0.3))
-    sprites.append(SparkleFade(interval=0.08))
+    sprites = list(Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
+    sprites.append(EveryNth(strip, factor=0.1, v=0.3))
+    sprites.append(SparkleFade(strip, interval=0.08))
     return Scene(sprites, 'Multi')
 
 
 def make_snakes_scene():
     n = 15
-    sprites = [Snake(offset=i * PixelStrip.count / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    sprites = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     return Scene(sprites, 'Snakes')
 
 empty_scene = Scene([])
 multi_scene = make_multi_scene()
 snakes_scene = make_snakes_scene()
-nth_scene = Scene([EveryNth(factor=0.1), EveryNth(factor=0.101)])
+nth_scene = Scene([EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
 sparkle_scene = Scene([Sparkle, SparkleFade])
-# gradient_scene = Scene(Snake(speed=1, length=PixelStrip.count, saturation=0, brightness=1))
+# gradient_scene = Scene(Snake(speed=1, length=len(strip), saturation=0, brightness=1))
 gradient_scene = Scene([
-    Hoop(offset=0, speed=0.1, hue=0),
-    Hoop(offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
-    Hoop(offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
-    Hoop(offset=3 / 4.0, speed=0.1, saturation=0),
+    Hoop(strip, offset=0, speed=0.1, hue=0),
+    Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
+    Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
+    Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
 ])
 tunnel_scene = Scene(Tunnel)
 hoops_scene = Scene(Hoop for _ in range(3))
@@ -356,7 +355,7 @@ except KeyboardInterrupt:
     # Fade to black.
     # Improvement: trap this signal, and set a global animation that fades the brightness and then quits.
     for _ in xrange(15):
-        strip.leds[:, 1:] *= .8
+        strip.driver.leds[:, 1:] *= .8
         strip.show()
         time.sleep(1. / 60)
     strip.clear()

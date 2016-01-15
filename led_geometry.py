@@ -1,6 +1,7 @@
 # from functools import lru_cache
 from math import sin, cos, pi
 from functools32 import lru_cache
+import apa102
 import yaml
 
 
@@ -41,29 +42,49 @@ class Pixel(object):
 
 
 class PixelStrip(object):
-    count = CONFIG['pixels']['count']
+    strips = {}
 
-    # Iterates over pixels, returning the same Flyweight each time.
+    def __init__(self, bus=0, device=1):
+        # Must set before creating the driver, since the driver can create a child process that needs access
+        # to the dictionary that this sets.
+        PixelStrip.set(bus, device, self)
+
+        self.count = CONFIG['pixels']['count']
+        self.angles = [PixelAngle.angle(i) for i in range(self.count)]
+
+        self.driver = apa102.APA102(self.count, bus=bus, device=device)
+        for w in ['clear', 'close', 'show', 'add_hsv', 'add_rgb', 'add_range_hsv', 'add_rgb_array', 'set_hsv']:
+            setattr(self, w, getattr(self.driver, w))
+
     @staticmethod
-    def pixels():
+    def set(bus, device, instance):
+        PixelStrip.strips[(bus, device)] = instance
+
+    @staticmethod
+    def get(bus, device):
+        return PixelStrip.strips[(bus, device)]
+
+    def __len__(self):
+        return self.count
+
+    # Iterates over LEDs, returning the same Flyweight each time.
+    def __iter__(self):
         pixel = Pixel(0)
-        for index, angle in enumerate(PixelAngles):
+        for index, angle in enumerate(self.angles):
             pixel.index = index
             pixel.angle = angle
             yield pixel
             index += 1
 
-    @staticmethod
     @lru_cache()
-    def pixels_near_angle(angle):
-        return list(pixel.clone() for pixel in PixelStrip.pixels_near_angle_(angle))
+    def pixels_near_angle(self, angle):
+        return list(pixel.clone() for pixel in self.pixels_near_angle_(angle))
 
-    @staticmethod
-    def pixels_near_angle_(angle):
+    def pixels_near_angle_(self, angle):
         a0 = None
         da0 = None
         y0 = None
-        for pixel in PixelStrip.pixels():
+        for pixel in self:
             a = pixel.angle_from(angle)
             if a0 is not None:
                 da = a - a0
@@ -79,25 +100,21 @@ class PixelStrip(object):
                 da0 = da
             a0 = a
 
-    @staticmethod
-    def pixels_within_angles(angle, band_width=0):
+    def pixels_within_angles(self, angle, band_width=0):
         half_band = band_width / 2.0
-        for pixel in PixelStrip.iter():
+        for pixel in self:
             if abs(pixel.angle_from(angle)) < half_band:
                 yield pixel
 
-    @staticmethod
-    def angle(index):
+    def angle(self, index):
         return PixelAngle.angle(index)
 
-    @staticmethod
-    def radius(index):
-        return 1 - index / float(PixelStrip.count)
+    def radius(self, index):
+        return 1 - index / float(self.count)
 
-    @staticmethod
-    def pos(index):
-        angle = PixelStrip.angle(index) * pi / 180
-        radius = PixelStrip.radius(index)
+    def pos(self, index):
+        angle = self.angle(index) * pi / 180
+        radius = self.radius(index)
         x = 0.5 + radius * cos(angle) / 2.0
         y = 0.5 + radius * sin(angle) / 2.0
         return (x, y)
@@ -132,5 +149,3 @@ class PixelAngle(object):
             a1 += 360
         ratio = (i - i0) / float(i1 - i0)
         return (a0 * (1 - ratio) + a1 * ratio) % 360
-
-PixelAngles = list(PixelAngle.angle(i) for i in range(PixelStrip.count))

@@ -1,16 +1,18 @@
 import os
+import re
 import sys
 import numpy as np
-from led_geometry import PixelStrip
 
-SIMULATED = True
-GAMMA = 2.5
+gamma = 2.5
 
 
 class SPI(object):
     def __init__(self, devpath, mode, max_speed_hz):
         self.spidev = SpiDev()
-        self.spidev.open(0, 0)
+        m = re.match(r'/dev/spidev(\d+).(\d+)', devpath)
+        assert m
+        bus, device = (int(n) for n in m.groups())
+        self.spidev.open(bus, device)
 
     def transfer(self, data):
         self.spidev.xfer2(np.fromstring(data, 'uint8'))
@@ -21,9 +23,13 @@ class SPI(object):
 
 class SpiDev(object):
     def open(self, bus, device):
+        self.bus = bus
+        self.device = device
+
         self.pygame = None
         if not os.environ.get('SPIDEV_PYGAME'):
             return
+
         import pygame
         self.pygame = pygame
         pygame.init()
@@ -31,6 +37,15 @@ class SpiDev(object):
         self.screen = pygame.display.set_mode((self.width, self.width))
         self.screen.fill((0, 0, 0))
         self.ix = 0  # next pixel index
+
+    @property
+    def strip(self):
+        # FIXME This is called after `open`, because the led_geometry->apa102->spidev_sim->led_geometry
+        # circular dependency prevents PixelStrip from being defined when this object is opened.
+        if not hasattr(self, '__strip'):
+            from led_geometry import PixelStrip
+            self.__strip = PixelStrip.get(self.bus, self.device)
+        return self.__strip
 
     def close(self):
         if self.pygame:
@@ -47,7 +62,7 @@ class SpiDev(object):
         width = self.width
         led_size = 5
         ix = self.ix
-        inverse_gamma = 1 / GAMMA
+        inverse_gamma = 1 / gamma
         for i in xrange(0, len(bytes), 4):
             frame = bytes[i]
             g = bytes[i + 1]
@@ -64,7 +79,7 @@ class SpiDev(object):
             r, g, b = (c * brightness / 0x1f for c in (r, g, b))
             r, g, b = (int(255 * ((c / 255.0) ** inverse_gamma)) for c in (r, g, b))
             ix += 1
-            x, y = PixelStrip.pos(ix)
+            x, y = self.strip.pos(ix)
             x = x * (width - led_size)
             y = y * (width - led_size)
             pygame.draw.circle(self.screen, (r, g, b), (int(round(x)), int(round(y))), led_size)
