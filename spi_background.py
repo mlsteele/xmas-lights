@@ -1,5 +1,6 @@
 import logging
 import os
+import signal
 from multiprocessing import Process, Queue
 import cPickle as pickle
 
@@ -9,9 +10,11 @@ try:
 except ImportError:
     import spidev_sim as periphery
 
-logger = logging.getLogger("spidev")
-if "spidev" in os.environ.get("DEBUG", "").split(","):
-    logger.setLevel(logging.INFO)
+mlogger = logging.getLogger('spi-master')
+wlogger = logging.getLogger('spi-worker')
+if 'spidev' in os.environ.get('DEBUG', '').split(','):
+    mlogger.setLevel(logging.INFO)
+    wlogger.setLevel(logging.INFO)
 
 
 class SpiMaster(object):
@@ -27,22 +30,27 @@ class SpiMaster(object):
 
     def xfer2(self, data):
         self.frame_no += 1
-        logger.info('enqueue frame #%d', self.frame_no)
+        mlogger.info('enqueue frame #%d', self.frame_no)
         self.queue.put(pickle.dumps(data, protocol=-1))
 
     def close(self):
-        self.queue.put("close")
+        mlogger.info('close SPI master')
+        self.queue.put('close')
         self.p.join()
 
 
 class SpiWorker(object):
     @staticmethod
     def run(q, initargs):
-        logger.info('creating SPI worker')
+        wlogger.info('creating SPI worker')
+        # ignore SIGINT, so that the parent can clean up and then send a 'close' command instead.
+        # Maybe the worker should be in a different process group, instead?
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         instance = SpiWorker(q, **initargs)
         while True:
             item = q.get()
-            if isinstance(item, str) and item == "close":
+            if isinstance(item, str) and item == 'close':
+                wlogger.info('close SPI worker')
                 instance.close()
                 return
             data = pickle.loads(item)
@@ -55,7 +63,7 @@ class SpiWorker(object):
 
     def xfer2(self, data):
         self.frame_no += 1
-        logger.info('send frame #%d', self.frame_no)
+        wlogger.info('send frame #%d', self.frame_no)
         self.spi.transfer(data)
 
     def close(self):

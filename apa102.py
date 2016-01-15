@@ -106,4 +106,5 @@ class APA102(object):
         self.spi.transfer(bytes.tobytes())
 
     def close(self):
+        logger.info('close')
         self.spi.close()
