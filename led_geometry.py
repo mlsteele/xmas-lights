@@ -50,8 +50,9 @@ class PixelStrip(object):
         # to the dictionary that this sets.
         PixelStrip.set(bus, device, self)
 
-        self.count = CONFIG['pixels']['count']
-        self.angles = np.array([PixelAngle.angle(i) for i in range(self.count)])
+        self.count = count = CONFIG['pixels']['count']
+        self.angles = np.array([PixelAngle.angle(i) for i in xrange(count)])
+        self.radii = np.array([1 - i / float(count) for i in xrange(count)])
 
         self.driver = apa102.APA102(self.count, bus=bus, device=device)
         for w in ['clear', 'close', 'show', 'add_hsv', 'add_rgb', 'add_range_hsv', 'add_rgb_array', 'set_hsv']:
@@ -79,9 +80,9 @@ class PixelStrip(object):
 
     @lru_cache()
     def pixels_near_angle(self, angle):
-        return list(pixel.clone() for pixel in self.pixels_near_angle_(angle))
+        return list(pixel.clone() for pixel in self._pixels_near_angle(angle))
 
-    def pixels_near_angle_(self, angle):
+    def _pixels_near_angle(self, angle):
         a0 = None
         da0 = None
         y0 = None
@@ -101,21 +102,12 @@ class PixelStrip(object):
                 da0 = da
             a0 = a
 
-    def pixels_within_angles(self, angle, band_width=0):
-        half_band = band_width / 2.0
-        for pixel in self:
-            if abs(pixel.angle_from(angle)) < half_band:
-                yield pixel
-
     def angle(self, index):
         return PixelAngle.angle(index)
 
-    def radius(self, index):
-        return 1 - index / float(self.count)
-
     def pos(self, index):
         angle = self.angle(index) * pi / 180
-        radius = self.radius(index)
+        radius = self.radii[index]
         x = 0.5 + radius * cos(angle) / 2.0
         y = 0.5 + radius * sin(angle) / 2.0
         return (x, y)

@@ -81,19 +81,19 @@ class Hoop(Sprite):
         # each ring is a tuple of start_index, end_index
         indices = list(p.index for p in strip.pixels_near_angle(180))
         self.ring_indices = zip(indices, indices[1:])
-        self.radii = [(strip.radius(i0) + strip.radius(i1)) / 2 for i0, i1 in self.ring_indices]
+        self.ring_radii = [(strip.radii[i0] + strip.radii[i1]) / 2 for i0, i1 in self.ring_indices]
 
     def render(self, strip, t):
         r0 = (self.offset + self.speed * t) % 1.0
         if self.reverse:
             r0 = 1.0 - r0
-        ring_distances = [abs(r - r0) for r in self.radii]
-        closest = [i for i, _ in sorted(enumerate(ring_distances), key=itemgetter(1))[:2]]
-        d_sum = sum(ring_distances[i] for i in closest)
-        vs = [1.0 - ring_distances[i] / d_sum for i, _ in enumerate(ring_distances)]
+        distances = [abs(r - r0) for r in self.ring_radii]
+        closest_indices = [i for i, _ in sorted(enumerate(distances), key=itemgetter(1))[:2]]
+        d_sum = sum(distances[i] for i in closest_indices)
+        vs = [1.0 - distances[i] / d_sum for i, _ in enumerate(distances)]
         h = self.hue
         s = self.saturation
-        for v, x0, x1 in ((vs[i],) + self.ring_indices[i] for i in closest):
+        for v, x0, x1 in ((vs[i],) + self.ring_indices[i] for i in closest_indices):
             strip.add_range_hsv(x0, x1, h, s, v)
 
 
@@ -169,24 +169,28 @@ class Tunnel(Sprite):
             strip.add_rgb(i, r, g, b)
 
 
-class Drips(Sprite):
+class Droplet(Sprite):
     def __init__(self, strip):
-        self.angle = 360 * random.random()
-        self.hue = random.random()
-        self.radius = random.random()
+        self.speed = 0.3
+        self.start_time = None
 
     def step(self, strip, t):
-        self.radius += 0.005
-        if self.radius > 1.1:
-            self.radius -= 1.2
-            self.angle = 360 * random.random()
-            self.hue = random.random()
+        if self.start_time is not None and self.offset + (t - self.start_time) * self.speed < 1.2:
+            return
+        self.start_time = t
+        self.angle = random.uniform(0, 360)
+        self.offset = random.uniform(-.3, -.1)
+        self.hue = random.random()
+        self.indices = np.array([pixel.index for pixel in strip.pixels_near_angle(self.angle)])
 
     def render(self, strip, t):
-        for pixel in strip.pixels_near_angle(self.angle):
-            dr = abs(strip.radius(pixel.index) - self.radius)
-            b = (1 - dr) ** 6
-            strip.add_hsv(pixel.index, self.hue, 0, b)
+        offset = self.offset + (t - self.start_time) * self.speed
+        distances = np.abs(strip.radii[self.indices] - offset)
+        closest_indices = np.argsort(distances)[:2]
+        values = (1 - distances) ** 2
+        values /= np.sum(values[closest_indices])
+        for i in closest_indices:
+            strip.add_hsv(self.indices[i], self.hue, 0., values[i])
 
 
 class Predicate(Sprite):

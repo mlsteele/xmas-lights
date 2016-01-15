@@ -78,10 +78,10 @@ class SpiDev(object):
             brightness = frame & 0x1f
             r, g, b = (c * brightness / 0x1f for c in (r, g, b))
             r, g, b = (int(255 * ((c / 255.0) ** inverse_gamma)) for c in (r, g, b))
-            ix += 1
             x, y = self.strip.pos(ix)
             x = x * (width - led_size)
             y = y * (width - led_size)
+            ix += 1
             pygame.draw.circle(self.screen, (r, g, b), (int(round(x)), int(round(y))), led_size)
         self.ix = ix
         pygame.display.update()
