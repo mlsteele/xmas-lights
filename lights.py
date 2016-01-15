@@ -353,6 +353,12 @@ try:
     args = parser.parse_args()
     main(args)
 except KeyboardInterrupt:
+    # Fade to black.
+    # Improvement: trap this signal, and set a global animation that fades the brightness and then quits.
+    for _ in xrange(15):
+        strip.leds[:, 1:] *= .8
+        strip.show()
+        time.sleep(1. / 60)
     strip.clear()
     strip.show()
 finally:
