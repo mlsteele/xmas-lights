@@ -13,7 +13,7 @@ class Sprite(object):
         pass
 
     # step is guaranteed to be called before render
-    def step(self):
+    def step(self, strip, t):
         pass
 
     def render(self, strip, t):
@@ -99,10 +99,21 @@ class Hoop(Sprite):
 
 
 class Sparkle(Sprite):
+    def __init__(self, strip):
+        self.indices = []
+        self.last_time = 0
+
+    def step(self, strip, t):
+        if t - self.last_time < 1 / 60.:
+            return
+        self.last_time = t
+        self.indices = np.where(np.random.random(len(strip)) < 0.001)[0]
+        n = len(self.indices)
+        self.hsv = np.column_stack((np.random.random(n), np.tile(0.3, n), np.random.random(n)))
+
     def render(self, strip, t):
-        for i in xrange(len(strip)):
-            if random.random() > 0.999:
-                strip.add_hsv(i, random.random(), 0.3, random.random())
+        for ii, i in enumerate(self.indices):
+            strip.add_hsv(i, *self.hsv[ii])
 
 
 class SparkleFade(Sprite):
@@ -124,7 +135,7 @@ class SparkleFade(Sprite):
         self.active = {}
         self.last_appear = time.time()
 
-    def step(self):
+    def step(self, strip, t):
         intervals_passed = (time.time() - self.last_appear) / self.interval
         for _ in xrange(int(min(intervals_passed, 10))):
             # Create a new pixel.
@@ -168,7 +179,7 @@ class Drips(Sprite):
         self.hue = random.random()
         self.radius = random.random()
 
-    def step(self):
+    def step(self, strip, t):
         self.radius += 0.005
         if self.radius > 1.1:
             self.radius -= 1.2

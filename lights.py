@@ -32,9 +32,9 @@ class Scene(Sprite):
         self.children = [make_sprite(child) for child in children]
         self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
-    def step(self):
+    def step(self, strip, t):
         for child in self.children:
-            child.step()
+            child.step(strip, t)
 
     def render(self, strip, t):
         for child in self.children:
@@ -97,12 +97,12 @@ class Mode(Sprite):
 
         self.remaining_frames = 400 + random.randrange(400)
 
-    def step(self):
+    def step(self, strip, t):
         self.remaining_frames -= 1
         if self.remaining_frames <= 0:
             self.next_scene()
         if self.current_child:
-            self.current_child.step()
+            self.current_child.step(strip, t)
 
     def render(self, strip, t):
         if self.current_child:
@@ -114,9 +114,6 @@ class SlaveMode(Sprite):
         self.pixels = None
 
     def next_scene(self):
-        pass
-
-    def step(self):
         pass
 
     def render(self, strip, t):
@@ -302,7 +299,7 @@ def do_frame(options):
     if 'stop' not in frame_modifiers:
         strip.clear()
     if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
-        current_mode.step()
+        current_mode.step(strip, synthetic_time)
         current_mode.render(strip, synthetic_time)
         dtime = IDEAL_FRAME_DELTA_T * speed
         if 'reverse' in frame_modifiers:
