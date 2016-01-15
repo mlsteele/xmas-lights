@@ -31,7 +31,7 @@ class APA102(object):
             # self.spi = spi = spidev.SpiDev()
             # spi.open(bus, device)
             # spi.max_speed_hz = SPI_MAX_SPEED_HZ
-        self.leds = np.zeros((self.count, 4))
+        self.leds = np.zeros((self.count, 3))
         self.clear()
 
     def clear(self):
@@ -43,9 +43,9 @@ class APA102(object):
             #   pixel = self.leds[x]; pixel[1] = g; etc. # somewhat slower
             #   self.leds[x,1:] = [g, b, r] # much slower
             leds = self.leds
-            leds[x, 1] = g
-            leds[x, 2] = b
-            leds[x, 3] = r
+            leds[x, 0] = g
+            leds[x, 1] = b
+            leds[x, 2] = r
 
     def add_rgb(self, x, r, g, b):
         if isinstance(x, float):
@@ -59,9 +59,9 @@ class APA102(object):
         if 0 <= x < self.count:
             # The following is much faster than self.leds[x,1:] += [g, b, r]
             led = self.leds[x]
-            led[1] += g
-            led[2] += b
-            led[3] += r
+            led[0] += g
+            led[1] += b
+            led[2] += r
 
     def set_hsv(self, x, h, s, v):
         self.set_rgb(x, *hsv_to_rgb(h, s, v))
@@ -70,7 +70,7 @@ class APA102(object):
         self.add_rgb(x, *hsv_to_rgb(h, s, v))
 
     def add_range_rgb(self, x0, x1, r, g, b):
-        self.leds[x0:x1, 1:] += [g, b, r]
+        self.leds[x0:x1] += [g, b, r]
 
     def add_range_hsv(self, x0, x1, h, s, v):
         self.add_range_rgb(x0, x1, *hsv_to_rgb(h, s, v))
@@ -95,11 +95,12 @@ class APA102(object):
         if x1 > n:
             x1 = n
             rgbs = rgbs[:x1 - x0, :]
-        leds[x0:x1, 1:] += np.fliplr(rgbs)
+        leds[x0:x1] += np.fliplr(rgbs)
 
     def show(self):
-        bytes = np.ravel(np.round(255 * np.clip(self.leds, 0.0, 1.0) ** GAMMA)).astype('uint8')
-        bytes[::4] = 0xff
+        bytes = np.round(255 * np.clip(self.leds, 0.0, 1.0) ** GAMMA)
+        bytes = np.insert(bytes, 0, 0xff, 1)
+        bytes = np.ravel(bytes).astype('uint8')
 
         header = np.array([0, 0, 0, 0], 'uint8')
         self.spi.transfer(header.tobytes())
