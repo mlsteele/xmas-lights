@@ -1,5 +1,4 @@
 import random
-import time
 from colorsys import hsv_to_rgb
 from operator import itemgetter
 import numpy as np
@@ -120,40 +119,36 @@ class SparkleFade(Sprite):
     """Sparkles that fade over time.
 
     Attributes:
-        interval (float): How often a new spark appears.
-        max_age (float): Maximum age of a sparkle in seconds.
+        count (int): Number of sparkles
+        lifetime (float): Maximum age of a sparkle in seconds.
         max_v (float): Maximum brightness.
     """
 
-    def __init__(self, strip, interval=0.01, max_age=.8, max_v=0.5):
+    def __init__(self, strip, count=50, lifetime=.8, max_v=0.5):
         self.strip = strip
-        self.interval = float(interval)
-        self.max_age = float(max_age)
+        self.count = count
+        self.lifetime = float(lifetime)
         self.max_v = float(max_v)
 
-        # Map from index -> activation time
-        self.active = {}
-        self.last_appear = time.time()
+        self.active = {}  # Map from index -> activation time
 
     def step(self, strip, t):
-        intervals_passed = (time.time() - self.last_appear) / self.interval
-        for _ in xrange(int(min(intervals_passed, 10))):
-            # Create a new pixel.
-            self.last_appear = time.time()
-            i = random.randint(0, len(self.strip) - 1)
-            self.active[i] = time.time()
+        expired = [ii for ii, activation_time in self.active.items() if t - activation_time > self.lifetime]
+        for i in expired:
+            del self.active[i]
 
-        for i, activation_time in self.active.items():
-            age = time.time() - activation_time
-            if age > self.max_age:
-                del self.active[i]
+        for i in xrange(self.count - len(self.active)):
+            ix = random.randint(0, len(self.strip) - 1)
+            self.active[ix] = t
+            if ix > 10:
+                self.active[ix] -= random.random() * self.lifetime * 0.5
 
     def render(self, strip, t):
+        lifetime = self.lifetime
         for i, activation_time in self.active.iteritems():
-            age = time.time() - activation_time
-            v_factor = 1 - (age / self.max_age)
-            v = v_factor * self.max_v
-            strip.add_hsv(i, 0, 0.0, v)
+            v = self.max_v * (1 - ((t - activation_time) / lifetime))
+            if v > 0:
+                strip.add_hsv(i, 0., 0., v)
 
 
 class Tunnel(Sprite):

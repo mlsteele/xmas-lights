@@ -45,7 +45,7 @@ def make_multi_scene():
     n = 15
     sprites = list(Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
     sprites.append(EveryNth(strip, factor=0.1, v=0.3))
-    sprites.append(SparkleFade(strip, interval=0.08))
+    sprites.append(SparkleFade(strip))
     return Scene(sprites, 'Multi')
 
 
