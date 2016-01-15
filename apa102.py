@@ -16,8 +16,9 @@ logger = logging.getLogger('apa102')
 if 'apa102' in os.environ.get('DEBUG', '').split(','):
     logger.setLevel(logging.INFO)
 
-GAMMA = 2.5
-SPI_MAX_SPEED_HZ = 8000000
+gamma = 2.5
+spi_max_speed_hz = 8000000
+pixel_global_brightness = False
 
 
 class APA102(object):
@@ -25,12 +26,12 @@ class APA102(object):
         self.count = count
         self.spi = None
         if multiprocessing and not hasattr(periphery, 'SIMULATED'):
-            self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=SPI_MAX_SPEED_HZ)
+            self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=spi_max_speed_hz)
         else:
-            self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, SPI_MAX_SPEED_HZ)
+            self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, spi_max_speed_hz)
             # self.spi = spi = spidev.SpiDev()
             # spi.open(bus, device)
-            # spi.max_speed_hz = SPI_MAX_SPEED_HZ
+            # spi.max_speed_hz = spi_max_speed_hz
         self.leds = np.zeros((self.count, 3))
         self.clear()
 
@@ -98,8 +99,14 @@ class APA102(object):
         leds[x0:x1] += np.fliplr(rgbs)
 
     def show(self):
-        bytes = np.round(255 * np.clip(self.leds, 0.0, 1.0) ** GAMMA)
-        bytes = np.insert(bytes, 0, 0xff, 1)
+        components = np.clip(self.leds, 0.0, 1.0) ** gamma
+        if pixel_global_brightness:
+            brightness = np.clip(np.ceil(np.amax(components, axis=1) * 31), 1, 31)
+            bytes = np.floor(self.leds * (np.array(255. * 31) / brightness).reshape(-1, 1))
+        else:
+            bytes = np.round(255 * components)
+            brightness = 0xff
+        bytes = np.insert(bytes, 0, brightness, 1)
         bytes = np.ravel(bytes).astype('uint8')
 
         header = np.array([0, 0, 0, 0], 'uint8')
