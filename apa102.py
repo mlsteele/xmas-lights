@@ -44,9 +44,9 @@ class APA102(object):
             #   pixel = self.leds[x]; pixel[1] = g; etc. # somewhat slower
             #   self.leds[x,1:] = [g, b, r] # much slower
             leds = self.leds
-            leds[x, 0] = g
-            leds[x, 1] = b
-            leds[x, 2] = r
+            leds[x, 0] = r
+            leds[x, 1] = g
+            leds[x, 2] = b
 
     def add_rgb(self, x, r, g, b):
         if isinstance(x, float):
@@ -58,11 +58,11 @@ class APA102(object):
             self.add_rgb(x + 1, f * r, f * g, f * b)
             return
         if 0 <= x < self.count:
-            # The following is much faster than self.leds[x,1:] += [g, b, r]
+            # The following is much faster than self.leds[x] += [g, b, r]
             led = self.leds[x]
-            led[0] += g
-            led[1] += b
-            led[2] += r
+            led[0] += r
+            led[1] += g
+            led[2] += b
 
     def set_hsv(self, x, h, s, v):
         self.set_rgb(x, *hsv_to_rgb(h, s, v))
@@ -71,7 +71,7 @@ class APA102(object):
         self.add_rgb(x, *hsv_to_rgb(h, s, v))
 
     def add_range_rgb(self, x0, x1, r, g, b):
-        self.leds[x0:x1] += [g, b, r]
+        self.leds[x0:x1] += [r, g, b]
 
     def add_range_hsv(self, x0, x1, h, s, v):
         self.add_range_rgb(x0, x1, *hsv_to_rgb(h, s, v))
@@ -96,7 +96,7 @@ class APA102(object):
         if x1 > n:
             x1 = n
             rgbs = rgbs[:x1 - x0, :]
-        leds[x0:x1] += np.fliplr(rgbs)
+        leds[x0:x1] += rgbs
 
     def show(self):
         components = np.clip(self.leds, 0.0, 1.0) ** gamma
@@ -106,7 +106,7 @@ class APA102(object):
         else:
             bytes = np.round(255 * components)
             brightness = 0xff
-        bytes = np.insert(bytes, 0, brightness, 1)
+        bytes = np.insert(np.fliplr(bytes), 0, brightness, 1)
         bytes = np.ravel(bytes).astype('uint8')
 
         header = np.array([0, 0, 0, 0], 'uint8')
