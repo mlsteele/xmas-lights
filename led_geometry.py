@@ -1,6 +1,7 @@
 # from functools import lru_cache
 from math import sin, cos, pi
 from functools32 import lru_cache
+import numpy as np
 import apa102
 import yaml
 
@@ -50,7 +51,7 @@ class PixelStrip(object):
         PixelStrip.set(bus, device, self)
 
         self.count = CONFIG['pixels']['count']
-        self.angles = [PixelAngle.angle(i) for i in range(self.count)]
+        self.angles = np.array([PixelAngle.angle(i) for i in range(self.count)])
 
         self.driver = apa102.APA102(self.count, bus=bus, device=device)
         for w in ['clear', 'close', 'show', 'add_hsv', 'add_rgb', 'add_range_hsv', 'add_rgb_array', 'set_hsv']:

@@ -162,10 +162,11 @@ class Tunnel(Sprite):
         band_angle = (self.band_angle + 4 * 60 * t) % 180
         front_angle = (self.front_angle + 1 * 60 * t) % 360
         half_width = self.band_width / 2.0
-        for pixel in strip:
-            angle = pixel.angle_from(front_angle)
-            if abs(angle - band_angle) < half_width:
-                strip.add_hsv(pixel.index, band_angle / 90., 1.0, 0.2)
+        r, g, b = hsv_to_rgb(band_angle / 90., 1.0, 0.2)
+        angles = np.abs(strip.angles - front_angle)
+        angles = np.minimum(angles % 360, -angles % 360)
+        for i in np.where(abs(angles - band_angle) < half_width)[0]:
+            strip.add_rgb(i, r, g, b)
 
 
 class Drips(Sprite):
