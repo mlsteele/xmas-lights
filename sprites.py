@@ -101,10 +101,11 @@ class Hoop(Sprite):
         if self.reverse:
             r0 = 1.0 - r0
 
-        distances = np.abs(self.ring_radii - r0)  # distance of each ring from target
-        closest_indices = np.argsort(distances)[:5]
+        distances = (self.ring_radii - r0) % 1
+        distances = np.minimum(np.abs(distances), np.abs(1 - distances)) ** 2
+        closest_indices = np.argsort(distances)[:3]
         d_sum = np.sum(distances[closest_indices])
-        values = (1.0 - distances / d_sum) ** 10
+        values = (1.0 - distances / d_sum) ** 5
         h = self.hue
         s = self.saturation
         for v, x0, x1 in ((values[i],) + self.ring_ends[i] for i in closest_indices):
