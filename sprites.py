@@ -165,6 +165,21 @@ class SparkleFade(Sprite):
                 strip.add_hsv(i, 0., 0., v)
 
 
+class Sweep(Sprite):
+    def __init__(self, strip):
+        self.speed = 100
+        self.exponent = 1
+
+    def render(self, strip, t):
+        angle = self.speed * t
+        value = (strip.angles - angle) % 360 / 360
+        value = value ** self.exponent
+        strip.driver.leds[:, :] = value[:, np.newaxis]
+
+        value = (strip.radii - 0.1 * t) % 1
+        strip.driver.leds[:, 0] = value
+
+
 class Tunnel(Sprite):
     def __init__(self, strip):
         self.front_angle = 350.0
