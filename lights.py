@@ -15,7 +15,7 @@ from led_geometry import PixelStrip
 import sprites
 from sprites import Sprite, EveryNth, Snake, Sparkle, SparkleFade
 
-strip = PixelStrip()
+strip = None  # initialized in `main`
 
 # Scenes
 #
@@ -42,35 +42,47 @@ class Scene(Sprite):
             child.render(strip, t)
 
 
-def make_multi_scene():
-    n = 15
-    children = list(Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
-    children.append(EveryNth(strip, factor=0.1, v=0.3))
-    children.append(SparkleFade(strip))
-    return Scene(children, 'Multi')
+scenes = {}
 
 
-def make_snakes_scene():
+def define_scene(name, children):
+    scenes[name] = Scene(children, name)
+
+
+def make_scenes():
+    define_scene('empty', [])
+
+    define_scene('nth', [EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
+
+    define_scene('sparkle', [Sparkle, SparkleFade])
+
+    # define_scene('gradient', Snake(speed=1, length=len(strip), saturation=0, brightness=1)
+
+    define_scene('gradient', [
+        sprites.Hoop(strip, offset=0, speed=0.1, hue=0),
+        sprites.Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
+        sprites.Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
+        sprites.Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
+    ])
+
+    define_scene('tunnel', sprites.Tunnel)
+
+    define_scene('hoops', (sprites.Hoop for _ in range(3)))
+
+    define_scene('drops', (sprites.Droplet for _ in range(6)))
+
+    define_scene('game', sprites.InteractiveWalk)
+
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
-    return Scene(children, 'Snakes')
+    define_scene('snakes', children)
 
-empty_scene = Scene([])
-multi_scene = make_multi_scene()
-snakes_scene = make_snakes_scene()
-nth_scene = Scene([EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
-sparkle_scene = Scene([Sparkle, SparkleFade])
-# gradient_scene = Scene(Snake(speed=1, length=len(strip), saturation=0, brightness=1))
-gradient_scene = Scene([
-    sprites.Hoop(strip, offset=0, speed=0.1, hue=0),
-    sprites.Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
-    sprites.Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
-    sprites.Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
-])
-tunnel_scene = Scene(sprites.Tunnel)
-hoops_scene = Scene(sprites.Hoop for _ in range(3))
-drops_scene = Scene(sprites.Droplet for _ in range(6))
-game_scene = Scene(sprites.InteractiveWalk)
+    n = 15
+    children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    children.append(EveryNth(strip, factor=0.1, v=0.3))
+    children.append(SparkleFade(strip))
+    define_scene('multi', children)
+
 
 # Modes
 #
@@ -79,10 +91,10 @@ game_scene = Scene(sprites.InteractiveWalk)
 # A mode is a sprite that iterates through child sprites.
 class Mode(Sprite):
     def __init__(self, children=frozenset()):
-        self.children = frozenset(children)
-        self.current_child = None
+        self.children = frozenset(scenes[child] if isinstance(child, str) else child for child in children)
         if len(self.children) == 1:
             self.child = list(self.children)[0]
+        self.current_child = None
         self.remaining_frames = 0
 
     def next_scene(self):
@@ -124,11 +136,14 @@ class SlaveMode(Sprite):
         strip.leds = self.pixels
         self.pixels = None
 
-attract_mode = Mode({multi_scene, snakes_scene, nth_scene, sparkle_scene, tunnel_scene, hoops_scene, drops_scene})
-game_mode = Mode({game_scene})
-slave_mode = SlaveMode()
+modes = {}
+current_mode = None
 
-current_mode = attract_mode
+
+def make_modes():
+    modes['attract'] = Mode({'multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops'})
+    modes['game'] = Mode({'game'})
+    modes['slave'] = SlaveMode()
 
 
 # Select mode, and print message if the mode has changed.
@@ -196,8 +211,8 @@ def handle_message():
     elif mtype == 'ping':
         print 'pong'
     elif mtype == 'pixels':
-        select_mode(slave_mode, 'slave mode')
-        slave_mode.pixels = json.loads(str(message['leds']))
+        select_mode(modes['slave'], 'slave mode')
+        current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
         frame_modifiers -= set(['stop', 'off'])
         select_mode(game_mode, 'game mode on')
@@ -230,24 +245,30 @@ parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store
 
 
 def main(args):
-    global speed
+    global current_mode, speed, strip
+
+    # must precede PixelStrip constructor
+    if args.pygame:
+        os.environ['SPIDEV_PYGAME'] = '1'
+
+    # strip must be initialized before scenes.
+    # scenes must be intiialized before modes, and before '--scene' and '--scenes' handling
+    strip = PixelStrip()
+    make_scenes()
+    make_modes()
+    current_mode = modes['attract']
 
     if args.show == 'scenes':
-        print 'scenes:',
-        print ', '.join(k.replace('_scene', '') for k, v in globals().items() if isinstance(v, Scene))
+        print 'scenes:', ', '.join(sorted(scenes.keys()))
         return
 
     if args.show == 'sprites':
         names = (cls.__name__ for cls in Sprite.get_subclasses() if cls not in (Scene, Mode, SlaveMode))
-        print 'sprites:', ', '.join(names)
+        print 'sprites:', ', '.join(sorted(names))
         return
 
-    # FIXME would need to preceed `import apa102` to have an effect
-    if args.pygame:
-        os.environ['SPIDEV_PYGAME'] = '1'
-
     if args.scene:
-        scene = globals().get(args.scene + '_scene', None)
+        scene = scenes.get(args.scene)
         if not isinstance(scene, Scene):
             print >> sys.stderr, 'Unknown scene:', args.scene
             exit(1)
@@ -337,7 +358,7 @@ def do_frame(options):
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if current_mode != slave_mode and 'sync' in frame_modifiers:
+        if current_mode != modes['slave'] and 'sync' in frame_modifiers:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print 'Frame lagging. Time to optimize.'
@@ -349,13 +370,15 @@ try:
     args = parser.parse_args()
     main(args)
 except KeyboardInterrupt:
-    # Fade to black.
-    # Improvement: trap this signal, and set a global animation that fades the brightness and then quits.
-    for _ in xrange(15):
-        strip.driver.leds[:, 1:] *= .8
+    if strip:
+        # Fade to black.
+        # Improvement: trap this signal, and set a global animation that fades the brightness and then quits.
+        for _ in xrange(15):
+            strip.driver.leds[:, 1:] *= .8
+            strip.show()
+            time.sleep(1. / 60)
+        strip.clear()
         strip.show()
-        time.sleep(1. / 60)
-    strip.clear()
-    strip.show()
 finally:
-    strip.close()
+    if strip:
+        strip.close()
