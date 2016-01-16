@@ -21,27 +21,6 @@ with open('geometry.yaml') as f:
     CONFIG = yaml.safe_load(f)
 
 
-class Pixel(object):
-    def __init__(self, index):
-        self.index = index
-
-    def clone(self):
-        clone = Pixel(self.index)
-        clone.angle = self.angle
-        return clone
-
-    # faster than @property
-    def __getattr__(self, name):
-        if name == 'angle':
-            self.angle = PixelAngle.angle(self.index)
-            return self.angle
-        raise AttributeError(name)
-
-    def angle_from(self, angle):
-        d = abs(self.angle - angle)
-        return min(d % 360, -d % 360)
-
-
 class PixelStrip(object):
     strips = {}
 
@@ -69,14 +48,10 @@ class PixelStrip(object):
     def __len__(self):
         return self.count
 
-    # Iterates over LEDs, returning the same Flyweight each time.
+    # Iterates over pixel indices
     def __iter__(self):
-        pixel = Pixel(0)
-        for index, angle in enumerate(self.angles):
-            pixel.index = index
-            pixel.angle = angle
-            yield pixel
-            index += 1
+        for i in xrange(self.count):
+            yield i
 
     @lru_cache()
     def indices_near_angle(self, angle):
@@ -86,12 +61,12 @@ class PixelStrip(object):
         a0 = None
         da0 = None
         y0 = None
-        for pixel in self:
-            a = pixel.angle_from(angle)
+        for ix in self:
+            a = abs(self.angles[ix] - angle)
+            a = min(a % 360, -a % 360)
             if a0 is not None:
                 da = a - a0
                 if da0 <= 0 and 0 <= da:
-                    ix = pixel.index
                     if a0 < a:
                         if y0 != ix - 1:
                             y0 = ix - 1
