@@ -79,10 +79,10 @@ class PixelStrip(object):
             index += 1
 
     @lru_cache()
-    def pixels_near_angle(self, angle):
-        return list(pixel.clone() for pixel in self._pixels_near_angle(angle))
+    def indices_near_angle(self, angle):
+        return list(i for i in self._indices_near_angle(angle))
 
-    def _pixels_near_angle(self, angle):
+    def _indices_near_angle(self, angle):
         a0 = None
         da0 = None
         y0 = None
@@ -95,10 +95,10 @@ class PixelStrip(object):
                     if a0 < a:
                         if y0 != ix - 1:
                             y0 = ix - 1
-                            yield Pixel(ix - 1)
+                            yield ix - 1
                     else:
                         y0 = ix
-                        yield Pixel(ix)
+                        yield ix
                 da0 = da
             a0 = a
 

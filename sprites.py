@@ -78,14 +78,11 @@ class Hoop(Sprite):
         self.speed = speed or random.randrange(1, 3) * 0.1
         self.reverse = random.random() < 0.25
 
-        # each ring is a tuple of start_index, end_index
-        # indices = list(p.index for p in strip.pixels_near_angle(180))
-
         # for each pixel index, its ring number
         pixel_rings = np.zeros(len(strip), int)
-        for pixel in strip.pixels_near_angle(180):
-            if pixel.index > 0:
-                pixel_rings[pixel.index:] += 1
+        for index in strip.indices_near_angle(180):
+            if index > 0:
+                pixel_rings[index:] += 1
 
         # compute average radius of each ring
         ring_count = np.max(pixel_rings)  # this skips the last ring, but it looks better this way
@@ -95,8 +92,9 @@ class Hoop(Sprite):
         D *= S  # D[ring_index] = distances of pixels on the ring; other pixels are 0
         self.ring_radii = np.sum(D, axis=1) / np.sum(S, axis=1)
 
+        # ring_ends : [(start_index, 1 + end_index)]
         ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(S, False))
-        self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), np.max(ring_pixel_indices, axis=1) + 1)
+        self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), 1 + np.max(ring_pixel_indices, axis=1))
 
     def render(self, strip, t):
         r0 = (self.offset + self.speed * t) % 1.0
@@ -197,7 +195,7 @@ class Droplet(Sprite):
         self.angle = random.uniform(0, 360)
         self.offset = random.uniform(-.3, -.1)
         self.hue = random.random()
-        self.indices = np.array([pixel.index for pixel in strip.pixels_near_angle(self.angle)])
+        self.indices = np.array(list(strip.indices_near_angle(self.angle)))
 
     def render(self, strip, t):
         offset = self.offset + (t - self.start_time) * self.speed
