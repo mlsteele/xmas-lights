@@ -1,6 +1,5 @@
 # from functools import lru_cache
-from math import sin, cos, pi
-from functools32 import lru_cache
+from math import pi
 import numpy as np
 import apa102
 import yaml
@@ -30,8 +29,18 @@ class PixelStrip(object):
         PixelStrip.set(bus, device, self)
 
         self.count = count = CONFIG['pixels']['count']
-        self.angles = np.array([PixelAngle.angle(i) for i in xrange(count)])
-        self.radii = np.array([1 - i / float(count) for i in xrange(count)])
+
+        angle_samples = np.array(sorted((x, a) for a, xs in CONFIG['pixels']['angles'].items() for x in xs))
+        # Assume samples are monotonically increasing. Whenever two consecutive samples violate this, add another wind.
+        for i in np.nditer(np.where(np.diff(angle_samples[:, 1]) <= 0)):
+            angle_samples[i + 1:, 1] += 360
+        self.angles = np.interp(np.arange(count), angle_samples[:, 0], angle_samples[:, 1]) % 360
+
+        self.radii = np.linspace(1, 0, num=count, endpoint=False)
+
+        angles_r = self.angles * pi / 180
+        self.xy = 0.5 + 0.5 * np.column_stack((self.radii * np.cos(angles_r), self.radii * np.sin(angles_r)))
+        # self.xyz = np.column_stack((self.radii * np.cos(self.angles), self.radii * np.cos(self.angles), np.))
 
         self.driver = apa102.APA102(self.count, bus=bus, device=device)
         for w in ['clear', 'close', 'show', 'add_hsv', 'add_rgb', 'add_range_hsv', 'add_rgb_array', 'set_hsv']:
@@ -57,44 +66,3 @@ class PixelStrip(object):
         # FIXME misses the endpoints
         angles = np.abs((self.angles - angle) % 360)
         return 1 + (np.diff(np.sign(np.diff(angles))) > 0).nonzero()[0]
-
-    def angle(self, index):
-        return PixelAngle.angle(index)
-
-    def pos(self, index):
-        angle = self.angle(index) * pi / 180
-        radius = self.radii[index]
-        x = 0.5 + radius * cos(angle) / 2.0
-        y = 0.5 + radius * sin(angle) / 2.0
-        return (x, y)
-
-
-class PixelAngle(object):
-    # Map from pixel indices to angles in degrees.
-    # The front face of the tree is 0.
-    # Angles increase CCW looking from the heavens.
-    REF_ANGLES = {}
-    for angle, indices in CONFIG['pixels']['angles'].items():
-        angle = float(angle)
-        for i in indices:
-            REF_ANGLES[i] = angle
-
-    @staticmethod
-    @memoize
-    def angle(i):
-        """Get the angle of a pixel.
-
-        Estimate by linear approximation between two closest known neighbors.
-        """
-        angle = PixelAngle.REF_ANGLES.get(i)
-        if angle is not None:
-            return angle
-
-        keys = PixelAngle.REF_ANGLES.keys()
-        i0 = max(j for j in keys if j <= i)
-        i1 = min(j for j in keys if i <= j)
-        a0, a1 = PixelAngle.REF_ANGLES[i0], PixelAngle.REF_ANGLES[i1]
-        if a1 <= a0:
-            a1 += 360
-        ratio = (i - i0) / float(i1 - i0)
-        return (a0 * (1 - ratio) + a1 * ratio) % 360
