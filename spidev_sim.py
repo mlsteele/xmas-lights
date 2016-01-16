@@ -51,37 +51,39 @@ class SpiDev(object):
         if self.pygame:
             self.pygame.quit()
 
-    def xfer2(self, bytes):
+    def xfer2(self, data):
         pygame = self.pygame
         if not pygame:
             return
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        width = self.width
-        led_size = 5
-        ix = self.ix
         inverse_gamma = 1 / gamma
-        for i in xrange(0, len(bytes), 4):
-            frame = bytes[i]
-            g = bytes[i + 1]
-            b = bytes[i + 2]
-            r = bytes[i + 3]
-            i += 4
+        led_size = 5
+        width = self.width
 
-            if frame == 0x0:
-                ix = 0
+        frames = np.array(data).reshape(-1, 4)
+        for pixels in np.split(frames, np.where(np.all(frames == 0, axis=1))[0]):
+            if not pixels.size:
                 continue
 
-            assert (frame & 0xe0) == 0xe0
-            brightness = frame & 0x1f
-            r, g, b = (c * brightness / 0x1f for c in (r, g, b))
-            r, g, b = (int(255 * ((c / 255.0) ** inverse_gamma)) for c in (r, g, b))
-            x, y = self.strip.xy[ix]
-            x = x * (width - led_size)
-            y = y * (width - led_size)
-            ix += 1
-            pygame.draw.circle(self.screen, (r, g, b), (int(round(x)), int(round(y))), led_size)
-        self.ix = ix
+            if np.all(pixels[0] == 0):
+                self.ix = 0
+                pixels = np.delete(pixels, 0, axis=0)
+
+            rows = pixels.shape[0]
+            indices = self.ix + np.arange(rows)
+            self.ix += rows
+
+            xy = self.strip.xy[indices] * (width - led_size)
+            xy = np.round(xy).astype(int)
+
+            assert np.all(np.bitwise_and(pixels[:, 0], 0xe0) == 0xe0)
+            rgbf = np.fliplr(pixels[:, 1:]) / 255. * (np.bitwise_and(0x1f, pixels[:, 0]) / 31)[:, np.newaxis]
+            rgbi = (rgbf ** inverse_gamma * 255.).astype(int)
+            for i in xrange(0, rows):
+                pygame.draw.circle(self.screen, rgbi[i], xy[i], led_size)
+
         pygame.display.update()
