@@ -53,29 +53,10 @@ class PixelStrip(object):
         for i in xrange(self.count):
             yield i
 
-    @lru_cache()
     def indices_near_angle(self, angle):
-        return list(i for i in self._indices_near_angle(angle))
-
-    def _indices_near_angle(self, angle):
-        a0 = None
-        da0 = None
-        y0 = None
-        for ix in self:
-            a = abs(self.angles[ix] - angle)
-            a = min(a % 360, -a % 360)
-            if a0 is not None:
-                da = a - a0
-                if da0 <= 0 and 0 <= da:
-                    if a0 < a:
-                        if y0 != ix - 1:
-                            y0 = ix - 1
-                            yield ix - 1
-                    else:
-                        y0 = ix
-                        yield ix
-                da0 = da
-            a0 = a
+        # FIXME misses the endpoints
+        angles = np.abs((self.angles - angle) % 360)
+        return 1 + (np.diff(np.sign(np.diff(angles))) > 0).nonzero()[0]
 
     def angle(self, index):
         return PixelAngle.angle(index)
