@@ -1,6 +1,5 @@
 import random
 from colorsys import hsv_to_rgb
-from operator import itemgetter
 import numpy as np
 
 
@@ -78,22 +77,39 @@ class Hoop(Sprite):
         self.saturation = saturation
         self.speed = speed or random.randrange(1, 3) * 0.1
         self.reverse = random.random() < 0.25
+
         # each ring is a tuple of start_index, end_index
-        indices = list(p.index for p in strip.pixels_near_angle(180))
-        self.ring_indices = zip(indices, indices[1:])
-        self.ring_radii = [(strip.radii[i0] + strip.radii[i1]) / 2 for i0, i1 in self.ring_indices]
+        # indices = list(p.index for p in strip.pixels_near_angle(180))
+
+        # for each pixel index, its ring number
+        pixel_rings = np.zeros(len(strip), int)
+        for pixel in strip.pixels_near_angle(180):
+            if pixel.index > 0:
+                pixel_rings[pixel.index:] += 1
+
+        # compute average radius of each ring
+        ring_count = np.max(pixel_rings)  # this skips the last ring, but it looks better this way
+        D = np.tile(strip.radii, (ring_count, 1))  # D[ring_index, pixel_index] = distance
+        R = np.tile(np.arange(ring_count), (len(strip), 1)).transpose()  # R[ring_index, :] = ring_index
+        S = np.equal(np.tile(pixel_rings, (ring_count, 1)), R)  # S[ri, pi] = True iff pixel pi is in ring ri
+        D *= S  # D[ring_index] = distances of pixels on the ring; other pixels are 0
+        self.ring_radii = np.sum(D, axis=1) / np.sum(S, axis=1)
+
+        ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(S, False))
+        self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), np.max(ring_pixel_indices, axis=1) + 1)
 
     def render(self, strip, t):
         r0 = (self.offset + self.speed * t) % 1.0
         if self.reverse:
             r0 = 1.0 - r0
-        distances = [abs(r - r0) for r in self.ring_radii]
-        closest_indices = [i for i, _ in sorted(enumerate(distances), key=itemgetter(1))[:2]]
-        d_sum = sum(distances[i] for i in closest_indices)
-        vs = [1.0 - distances[i] / d_sum for i, _ in enumerate(distances)]
+
+        distances = np.abs(self.ring_radii - r0)  # distance of each ring from target
+        closest_indices = np.argsort(distances)[:2]
+        d_sum = np.sum(distances[closest_indices])
+        values = 1.0 - distances / d_sum
         h = self.hue
         s = self.saturation
-        for v, x0, x1 in ((vs[i],) + self.ring_indices[i] for i in closest_indices):
+        for v, x0, x1 in ((values[i],) + self.ring_ends[i] for i in closest_indices):
             strip.add_range_hsv(x0, x1, h, s, v)
 
 
