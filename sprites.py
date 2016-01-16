@@ -104,9 +104,9 @@ class Hoop(Sprite):
             r0 = 1.0 - r0
 
         distances = np.abs(self.ring_radii - r0)  # distance of each ring from target
-        closest_indices = np.argsort(distances)[:2]
+        closest_indices = np.argsort(distances)[:5]
         d_sum = np.sum(distances[closest_indices])
-        values = 1.0 - distances / d_sum
+        values = (1.0 - distances / d_sum) ** 10
         h = self.hue
         s = self.saturation
         for v, x0, x1 in ((values[i],) + self.ring_ends[i] for i in closest_indices):
