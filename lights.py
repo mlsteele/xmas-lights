@@ -12,7 +12,8 @@ import types
 from messages import get_message
 from publish_message import publish
 from led_geometry import PixelStrip
-from sprites import Sprite, Droplet, EveryNth, Hoop, InteractiveWalk, Snake, Sparkle, SparkleFade, Tunnel
+import sprites
+from sprites import Sprite, EveryNth, Snake, Sparkle, SparkleFade
 
 strip = PixelStrip()
 
@@ -43,16 +44,16 @@ class Scene(Sprite):
 
 def make_multi_scene():
     n = 15
-    sprites = list(Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
-    sprites.append(EveryNth(strip, factor=0.1, v=0.3))
-    sprites.append(SparkleFade(strip))
-    return Scene(sprites, 'Multi')
+    children = list(Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n))
+    children.append(EveryNth(strip, factor=0.1, v=0.3))
+    children.append(SparkleFade(strip))
+    return Scene(children, 'Multi')
 
 
 def make_snakes_scene():
     n = 15
-    sprites = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
-    return Scene(sprites, 'Snakes')
+    children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    return Scene(children, 'Snakes')
 
 empty_scene = Scene([])
 multi_scene = make_multi_scene()
@@ -61,15 +62,15 @@ nth_scene = Scene([EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
 sparkle_scene = Scene([Sparkle, SparkleFade])
 # gradient_scene = Scene(Snake(speed=1, length=len(strip), saturation=0, brightness=1))
 gradient_scene = Scene([
-    Hoop(strip, offset=0, speed=0.1, hue=0),
-    Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
-    Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
-    Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
+    sprites.Hoop(strip, offset=0, speed=0.1, hue=0),
+    sprites.Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
+    sprites.Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
+    sprites.Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
 ])
-tunnel_scene = Scene(Tunnel)
-hoops_scene = Scene(Hoop for _ in range(3))
-drops_scene = Scene(Droplet for _ in range(6))
-game_scene = Scene(InteractiveWalk)
+tunnel_scene = Scene(sprites.Tunnel)
+hoops_scene = Scene(sprites.Hoop for _ in range(3))
+drops_scene = Scene(sprites.Droplet for _ in range(6))
+game_scene = Scene(sprites.InteractiveWalk)
 
 # Modes
 #
@@ -235,10 +236,9 @@ def main(args):
         print 'scenes:',
         print ', '.join(k.replace('_scene', '') for k, v in globals().items() if isinstance(v, Scene))
         return
+
     if args.show == 'sprites':
-        names = (k.replace('_scene', '')
-                 for k, v in globals().items()
-                 if isinstance(v, Sprite) and not isinstance(v, (Mode, SlaveMode)))
+        names = (cls.__name__ for cls in Sprite.get_subclasses() if cls not in (Scene, Mode, SlaveMode))
         print 'sprites:', ', '.join(names)
         return
 
@@ -254,7 +254,7 @@ def main(args):
         select_mode(Mode({scene}))
 
     if args.sprite:
-        sprite = globals().get(args.sprite[0].capitalize() + args.sprite[1:], None)
+        sprite = getattr(sprites, args.sprite[0].capitalize() + args.sprite[1:], None)
         if not isinstance(sprite, (type, types.ClassType)) or not issubclass(sprite, Sprite):
             print >> sys.stderr, 'Unknown sprite:', args.sprite
             exit(1)

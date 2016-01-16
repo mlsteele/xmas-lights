@@ -4,6 +4,13 @@ import numpy as np
 
 
 class Sprite(object):
+    @classmethod
+    def get_subclasses(cls):
+        for subclass in cls.__subclasses__():
+            yield subclass
+            for descendant in subclass.get_subclasses():
+                yield descendant
+
     def __init__(self, strip):
         pass
 
