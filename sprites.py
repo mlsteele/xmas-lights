@@ -86,14 +86,14 @@ class Hoop(Sprite):
 
         # compute average radius of each ring
         ring_count = np.max(pixel_rings)  # this skips the last ring, but it looks better this way
-        D = np.tile(strip.radii, (ring_count, 1))  # D[ring_index, pixel_index] = distance
-        R = np.tile(np.arange(ring_count), (len(strip), 1)).transpose()  # R[ring_index, :] = ring_index
-        S = np.equal(np.tile(pixel_rings, (ring_count, 1)), R)  # S[ri, pi] = True iff pixel pi is in ring ri
-        D *= S  # D[ring_index] = distances of pixels on the ring; other pixels are 0
-        self.ring_radii = np.sum(D, axis=1) / np.sum(S, axis=1)
+        distances = np.tile(strip.radii, (ring_count, 1))  # D[ring_index, pixel_index] = distance
+        ring_indices = np.tile(np.arange(ring_count), (len(strip), 1)).transpose()  # R[ring_index, :] = ring_index
+        mask = np.equal(np.tile(pixel_rings, (ring_count, 1)), ring_indices)  # S[ri, pi] = True iff pixel pi is in ring ri
+        distances *= mask  # D[ring_index] = distances of pixels on the ring; other pixels are 0
+        self.ring_radii = np.sum(distances, axis=1) / np.sum(mask, axis=1)
 
         # ring_ends : [(start_index, 1 + end_index)]
-        ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(S, False))
+        ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(mask, False))
         self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), 1 + np.max(ring_pixel_indices, axis=1))
 
     def render(self, strip, t):
