@@ -77,7 +77,7 @@ class SpiDev(object):
             indices = self.ix + np.arange(rows)
             self.ix += rows
 
-            pos = np.round(self.strip.pos[indices] * (width - led_size)).astype(int)
+            pos = np.round(self.strip.pos[indices][:, :-1] * (width - led_size)).astype(int)
 
             assert np.all(np.bitwise_and(pixels[:, 0], 0xe0) == 0xe0)
             rgbf = np.fliplr(pixels[:, 1:]) / 255. * (np.bitwise_and(0x1f, pixels[:, 0]) / 31)[:, np.newaxis]

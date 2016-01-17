@@ -74,6 +74,8 @@ def make_scenes():
 
     define_scene('game', sprites.InteractiveWalk)
 
+    define_scene('slices', sprites.Slices)
+
     define_scene('sweep', sprites.Sweep)
 
     n = 15
@@ -98,6 +100,7 @@ class Mode(Sprite):
         if len(self.children) == 1:
             self.child = list(self.children)[0]
         self.current_child = None
+        self.next_child = None
         self.remaining_frames = 0
 
     def next_scene(self):
@@ -109,19 +112,36 @@ class Mode(Sprite):
 
         child = random.choice(list(others))
         print 'selecting mode', child.name
+        self.next_child = child
+        self.fade_start = None
 
         self.remaining_frames = 400 + random.randrange(400)
 
     def step(self, strip, t):
+        self.fade = 0
+        if self.next_child:
+            self.fade_start = self.fade_start or t
+            self.fade = (t - self.fade_start) * 3
+            if self.fade >= 1:
+                self.current_child = self.next_child
+                self.next_child = None
+
         self.remaining_frames -= 1
         if self.remaining_frames <= 0:
             self.next_scene()
         if self.current_child:
             self.current_child.step(strip, t)
+        if self.next_child:
+            self.next_child.step(strip, t)
 
     def render(self, strip, t):
         if self.current_child:
             self.current_child.render(strip, t)
+        if self.next_child:
+            leds = np.copy(strip.driver.leds)
+            strip.clear()
+            self.next_child.render(strip, t)
+            strip.driver.leds = (1 - self.fade) * leds + self.fade * strip.driver.leds
 
 
 class SlaveMode(Sprite):
@@ -143,7 +163,7 @@ current_mode = None
 
 
 def make_modes():
-    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep'])
+    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices'])
     modes['game'] = Mode(['game'])
     modes['slave'] = SlaveMode()
 

@@ -60,6 +60,12 @@ class Snake(Sprite):
         #     strip.add_hsv(bound(int(x)), h, self.saturation, 1)
 
 
+class Slices(Sprite):
+    def render(self, strip, t):
+        speeds = np.array([.4, .5, .6])
+        strip.driver.leds[:, :] = (strip.pos + t * speeds) % 1
+
+
 class EveryNth(Sprite):
     def __init__(self, strip, offset=0, speed=0.25, factor=0.02, v=0.5):
         self.num = int(len(strip) * factor)
@@ -86,7 +92,7 @@ class Hoop(Sprite):
         self.reverse = random.random() < 0.25
 
         # ring_ends : [(start_index, 1 + end_index)]
-        ring_count = np.max(strip.pixel_rings) + 1
+        ring_count = np.max(strip.pixel_ring) + 1
         ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(strip.ring_mask, False))
         self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), 1 + np.max(ring_pixel_indices, axis=1))
 
