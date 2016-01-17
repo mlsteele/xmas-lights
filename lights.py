@@ -9,6 +9,7 @@ import random
 import sys
 import time
 import types
+import numpy as np
 from messages import get_message
 from publish_message import publish
 from led_geometry import PixelStrip
@@ -108,7 +109,6 @@ class Mode(Sprite):
 
         child = random.choice(list(others))
         print 'selecting mode', child.name
-        self.current_child = child
 
         self.remaining_frames = 400 + random.randrange(400)
 
