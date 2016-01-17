@@ -86,7 +86,7 @@ class Hoop(Sprite):
         self.reverse = random.random() < 0.25
 
         # ring_ends : [(start_index, 1 + end_index)]
-        ring_count = np.max(strip.pixel_rings)  # this skips the last ring, but it looks better this way
+        ring_count = np.max(strip.pixel_rings) + 1
         ring_pixel_indices = np.ma.masked_array(np.tile(np.arange(len(strip)), (ring_count, 1)), mask=np.equal(strip.ring_mask, False))
         self.ring_ends = zip(np.min(ring_pixel_indices, axis=1), 1 + np.max(ring_pixel_indices, axis=1))
 

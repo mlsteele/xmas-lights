@@ -56,7 +56,7 @@ class PixelStrip(object):
                 pixel_rings[index:] += 1
 
         # compute average radius of each ring
-        ring_count = np.max(pixel_rings)  # this skips the last ring, but it looks better this way
+        ring_count = 1 + np.max(pixel_rings)
         distances = np.tile(self.radii, (ring_count, 1))  # D[ring_index, pixel_index] = distance
         ring_indices = np.tile(np.arange(ring_count), (self.count, 1)).transpose()  # R[ring_index, :] = ring_index
         self.ring_mask = np.equal(np.tile(pixel_rings, (ring_count, 1)), ring_indices)  # S[ri, pi] = True iff pixel pi is in ring ri
