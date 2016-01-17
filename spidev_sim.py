@@ -77,13 +77,12 @@ class SpiDev(object):
             indices = self.ix + np.arange(rows)
             self.ix += rows
 
-            xy = self.strip.xy[indices] * (width - led_size)
-            xy = np.round(xy).astype(int)
+            pos = np.round(self.strip.pos[indices] * (width - led_size)).astype(int)
 
             assert np.all(np.bitwise_and(pixels[:, 0], 0xe0) == 0xe0)
             rgbf = np.fliplr(pixels[:, 1:]) / 255. * (np.bitwise_and(0x1f, pixels[:, 0]) / 31)[:, np.newaxis]
             rgbi = (rgbf ** inverse_gamma * 255.).astype(int)
             for i in xrange(0, rows):
-                pygame.draw.circle(self.screen, rgbi[i], xy[i], led_size)
+                pygame.draw.circle(self.screen, rgbi[i], pos[i], led_size)
 
         pygame.display.update()

@@ -34,13 +34,12 @@ class PixelStrip(object):
         # Assume samples are monotonically increasing. Whenever two consecutive samples violate this, add another wind.
         for i in np.nditer(np.where(np.diff(angle_samples[:, 1]) <= 0)):
             angle_samples[i + 1:, 1] += 360
-        self.angles = np.interp(np.arange(count), angle_samples[:, 0], angle_samples[:, 1]) % 360
+        self.angle = np.interp(np.arange(count), angle_samples[:, 0], angle_samples[:, 1]) % 360
 
-        self.radii = np.linspace(1, 0, num=count, endpoint=False)
+        self.radius = np.linspace(1, 0, num=count, endpoint=False)
 
-        angles_r = self.angles * pi / 180
-        self.xy = 0.5 + 0.5 * np.column_stack((self.radii * np.cos(angles_r), self.radii * np.sin(angles_r)))
-        # self.xyz = np.column_stack((self.radii * np.cos(self.angles), self.radii * np.cos(self.angles), np.))
+        angles_r = self.angle * pi / 180
+        self.pos = 0.5 + 0.5 * np.column_stack((self.radius * np.cos(angles_r), self.radius * np.sin(angles_r)))
 
         self._initialize_rings()
 
@@ -57,11 +56,11 @@ class PixelStrip(object):
 
         # compute average radius of each ring
         ring_count = 1 + np.max(pixel_rings)
-        distances = np.tile(self.radii, (ring_count, 1))  # D[ring_index, pixel_index] = distance
+        distances = np.tile(self.radius, (ring_count, 1))  # D[ring_index, pixel_index] = distance
         ring_indices = np.tile(np.arange(ring_count), (self.count, 1)).transpose()  # R[ring_index, :] = ring_index
         self.ring_mask = np.equal(np.tile(pixel_rings, (ring_count, 1)), ring_indices)  # S[ri, pi] = True iff pixel pi is in ring ri
         distances *= self.ring_mask  # D[ring_index] = distances of pixels on the ring; other pixels are 0
-        self.ring_radii = np.sum(distances, axis=1) / np.sum(self.ring_mask, axis=1)
+        self.ring_radius = np.sum(distances, axis=1) / np.sum(self.ring_mask, axis=1)
 
     @staticmethod
     def set(bus, device, instance):
@@ -81,5 +80,5 @@ class PixelStrip(object):
 
     def indices_near_angle(self, angle):
         # FIXME misses the endpoints
-        angles = np.abs((self.angles - angle) % 360)
+        angles = np.abs((self.angle - angle) % 360)
         return 1 + (np.diff(np.sign(np.diff(angles))) > 0).nonzero()[0]

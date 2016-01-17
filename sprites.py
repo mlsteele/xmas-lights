@@ -95,14 +95,14 @@ class Hoop(Sprite):
         if self.reverse:
             r0 = 1.0 - r0
 
-        distances = (strip.ring_radii - r0) % 1
-        distances = np.minimum(np.abs(distances), np.abs(1 - distances)) ** 2
-        closest_indices = np.argsort(distances)[:3]
-        d_sum = np.sum(distances[closest_indices])
-        values = (1.0 - distances / d_sum) ** 5
+        distance = (strip.ring_radius - r0) % 1
+        distance = np.minimum(np.abs(distance), np.abs(1 - distance)) ** 2
+        closest_ring = np.argsort(distance)[:3]
+        d_sum = np.sum(distance[closest_ring])
+        value = (1.0 - distance / d_sum) ** 5
         h = self.hue
         s = self.saturation
-        for v, x0, x1 in ((values[i],) + self.ring_ends[i] for i in closest_indices):
+        for v, x0, x1 in ((value[i],) + self.ring_ends[i] for i in closest_ring):
             strip.add_range_hsv(x0, x1, h, s, v)
 
 
@@ -168,12 +168,12 @@ class Sweep(Sprite):
 
     def render(self, strip, t):
         angle = self.a_speed * t
-        value = (strip.angles - angle) % 360 / 360
+        value = (strip.angle - angle) % 360 / 360
         value = value ** self.exponent
         strip.driver.leds[:, :] = value[:, np.newaxis]
 
         i = int((self.r_speed * t) % 3)
-        value = (strip.radii - self.r_speed * t) % 1
+        value = (strip.radius - self.r_speed * t) % 1
         strip.driver.leds[:, i] = value
 
 
@@ -189,7 +189,7 @@ class Tunnel(Sprite):
         front_angle = (self.front_angle + 1 * 60 * t) % 360
         half_width = self.band_width / 2.0
         r, g, b = hsv_to_rgb(band_angle / 90., 1.0, 0.2)
-        angles = np.abs(strip.angles - front_angle)
+        angles = np.abs(strip.angle - front_angle)
         angles = np.minimum(angles % 360, -angles % 360)
         for i in np.where(abs(angles - band_angle) < half_width)[0]:
             strip.add_rgb(i, r, g, b)
@@ -211,12 +211,12 @@ class Droplet(Sprite):
 
     def render(self, strip, t):
         offset = self.offset + (t - self.start_time) * self.speed
-        distances = np.abs(strip.radii[self.indices] - offset)
-        closest_indices = np.argsort(distances)[:2]
-        values = (1 - distances) ** 2
-        values /= np.sum(values[closest_indices])
-        for i in closest_indices:
-            strip.add_hsv(self.indices[i], self.hue, 0., values[i])
+        distance = np.abs(strip.radius[self.indices] - offset)
+        closest_pixel = np.argsort(distance)[:2]
+        value = (1 - distance) ** 2
+        value /= np.sum(value[closest_pixel])
+        for i in closest_pixel:
+            strip.add_hsv(self.indices[i], self.hue, 0., value[i])
 
 
 class Predicate(Sprite):
