@@ -69,9 +69,11 @@ def make_scenes():
 
     define_scene('hoops', (sprites.Hoop for _ in range(3)))
 
-    define_scene('drops', (sprites.Droplet for _ in range(6)))
+    define_scene('drops', (sprites.Droplet for _ in range(10)))
 
     define_scene('game', sprites.InteractiveWalk)
+
+    define_scene('sweep', sprites.Sweep)
 
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
@@ -141,8 +143,8 @@ current_mode = None
 
 
 def make_modes():
-    modes['attract'] = Mode({'multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops'})
-    modes['game'] = Mode({'game'})
+    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep'])
+    modes['game'] = Mode(['game'])
     modes['slave'] = SlaveMode()
 
 

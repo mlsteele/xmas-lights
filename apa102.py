@@ -7,10 +7,10 @@ from spi_background import SpiMaster
 
 # TODO DRY spi_background.py
 try:
-    import periphery
+    import periphery as spi_driver
 except ImportError:
-    print 'periphery not found; using simulator'
-    import spidev_sim as periphery
+    # print 'spi_driver not found; using simulator'
+    import spidev_sim as spi_driver
 
 logger = logging.getLogger('apa102')
 if 'apa102' in os.environ.get('DEBUG', '').split(','):
@@ -22,13 +22,15 @@ pixel_global_brightness = False
 
 
 class APA102(object):
-    def __init__(self, count, bus=0, device=1, multiprocessing=True):
+    def __init__(self, count, bus=0, device=1, multiprocessing=None):
+        if multiprocessing is None:
+            multiprocessing = not hasattr(spi_driver, 'SIMULATED')
         self.count = count
         self.spi = None
-        if multiprocessing and not hasattr(periphery, 'SIMULATED'):
+        if multiprocessing:
             self.spi = SpiMaster(bus=bus, device=device, max_speed_hz=spi_max_speed_hz)
         else:
-            self.spi = periphery.SPI('/dev/spidev%d.%d' % (bus, device), 0, spi_max_speed_hz)
+            self.spi = spi_driver.SPI('/dev/spidev%d.%d' % (bus, device), 0, spi_max_speed_hz)
             # self.spi = spi = spidev.SpiDev()
             # spi.open(bus, device)
             # spi.max_speed_hz = spi_max_speed_hz

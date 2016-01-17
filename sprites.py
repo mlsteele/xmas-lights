@@ -175,17 +175,19 @@ class SparkleFade(Sprite):
 
 class Sweep(Sprite):
     def __init__(self, strip):
-        self.speed = 100
+        self.a_speed = 100
+        self.r_speed = 0.1
         self.exponent = 1
 
     def render(self, strip, t):
-        angle = self.speed * t
+        angle = self.a_speed * t
         value = (strip.angles - angle) % 360 / 360
         value = value ** self.exponent
         strip.driver.leds[:, :] = value[:, np.newaxis]
 
-        value = (strip.radii - 0.1 * t) % 1
-        strip.driver.leds[:, 0] = value
+        i = int((self.r_speed * t) % 3)
+        value = (strip.radii - self.r_speed * t) % 1
+        strip.driver.leds[:, i] = value
 
 
 class Tunnel(Sprite):
