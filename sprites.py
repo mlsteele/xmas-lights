@@ -252,3 +252,20 @@ class InteractiveWalk(Sprite):
         for i in xrange(self.pos - self.radius, self.pos + self.radius):
             i = i % len(strip)
             strip.add_hsv(i, 0.3, 0.4, 0.2)
+
+class RedOrGreenSnake(Sprite):
+    def __init__(self, strip, offset=0, speed=1, brightness=0.3):
+        self.head = offset or random.choice(range(len(strip)))
+        self.head_f = float(self.head)
+        self.brightness = float(brightness)
+        self.length = 20
+        self.speed = 1 #speed
+        self.hue = random.choice([0,.33])
+
+    def step(self, strip, _):
+        self.head_f = (self.head_f + self.speed)%len(strip)
+        self.head = int(self.head_f) % len(strip)
+
+    def render(self, strip, _):
+        h, s, v = self.hue, 1, self.brightness
+        strip.add_range_hsv(self.head, self.head + self.length, h, s, v)

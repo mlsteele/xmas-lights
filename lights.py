@@ -82,6 +82,11 @@ def make_scenes():
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     define_scene('snakes', children)
 
+    n = 30
+    children = [sprites.RedOrGreenSnake(strip, offset=i * len(strip) / float(n)) for i in range(n)]
+    define_scene('RedGreen', children)
+
+
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     children.append(EveryNth(strip, factor=0.1, v=0.3))
@@ -163,7 +168,7 @@ current_mode = None
 
 
 def make_modes():
-    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices'])
+    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'RedGreen'])
     modes['game'] = Mode(['game'])
     modes['slave'] = SlaveMode()
 
