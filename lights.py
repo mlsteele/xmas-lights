@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import random
-import sys
 import time
 import types
 import numpy as np
@@ -14,24 +13,40 @@ from messages import get_message
 from publish_message import publish
 from led_geometry import PixelStrip
 import sprites
-from sprites import Sprite, EveryNth, Snake, Sparkle, SparkleFade
+from sprites import Scene, EveryNth, Snake, Sparkle, SparkleFade
 
 strip = None  # initialized in `main`
 
-# Scenes
+
+def capitalize_first_letter(string):
+    return string[0].capitalize() + string[1:]
+
+
+def lower_first_letter(string):
+    return string[0].lower() + string[1:]
+
+# MultiScenes
 #
 
 
-# A Scene is just a Sprite that composes a set of underlying sprites
-class Scene(Sprite):
+def make_scene(scene):
+    """Given a Scene instance, class, or class name, return an instance."""
+    obj = scene
+    if isinstance(scene, str):
+        obj = scenes.get(scene, None)
+        obj = obj or getattr(sprites, capitalize_first_letter(scene), None)
+    if isinstance(obj, type):
+        obj = obj(strip)
+    if not isinstance(obj, Scene):
+        raise Exception('Not a scene name: %s' % scene)
+    return obj
+
+
+class MultiScene(Scene):
     def __init__(self, children=(), name=None):
-        def make_sprite(sprite):
-            if isinstance(sprite, type):
-                sprite = sprite(strip)
-            return sprite
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
-        self.children = [make_sprite(child) for child in children]
+        self.children = [make_scene(child) for child in children]
         self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def step(self, strip, t):
@@ -47,7 +62,7 @@ scenes = {}
 
 
 def define_scene(name, children):
-    scenes[name] = Scene(children, name)
+    scenes[name] = MultiScene(children, name)
 
 
 def make_scenes():
@@ -66,17 +81,11 @@ def make_scenes():
         sprites.Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
     ])
 
-    define_scene('tunnel', sprites.Tunnel)
-
     define_scene('hoops', (sprites.Hoop for _ in range(3)))
 
     define_scene('drops', (sprites.Droplet for _ in range(10)))
 
     define_scene('game', sprites.InteractiveWalk)
-
-    define_scene('slices', sprites.Slices)
-
-    define_scene('sweep', sprites.Sweep)
 
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
@@ -84,8 +93,7 @@ def make_scenes():
 
     n = 30
     children = [sprites.RedOrGreenSnake(strip, offset=i * len(strip) / float(n)) for i in range(n)]
-    define_scene('RedGreen', children)
-
+    define_scene('redGreen', children)
 
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
@@ -97,11 +105,14 @@ def make_scenes():
 # Modes
 #
 
+class Mode(Scene):
+    pass
 
-# A mode is a sprite that iterates through child sprites.
-class Mode(Sprite):
+
+# Attract mode is a scene that iterates through child scenes.
+class AttractMode(Mode):
     def __init__(self, children=frozenset()):
-        self.children = frozenset(scenes[child] if isinstance(child, str) else child for child in children)
+        self.children = frozenset(make_scene(child) for child in children)
         if len(self.children) == 1:
             self.child = list(self.children)[0]
         self.current_child = None
@@ -149,12 +160,9 @@ class Mode(Sprite):
             strip.driver.leds = (1 - self.fade) * leds + self.fade * strip.driver.leds
 
 
-class SlaveMode(Sprite):
+class SlaveMode(Mode):
     def __init__(self):
         self.pixels = None
-
-    def next_scene(self):
-        pass
 
     def render(self, strip, t):
         if not self.pixels:
@@ -168,9 +176,14 @@ current_mode = None
 
 
 def make_modes():
-    modes['attract'] = Mode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'RedGreen'])
-    modes['game'] = Mode(['game'])
-    modes['slave'] = SlaveMode()
+    global attract_mode, slave_mode
+
+    attract_mode = AttractMode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'redGreen'])
+    slave_mode = SlaveMode()
+
+    modes['attract'] = attract_mode
+    # modes['game'] = Mode(['game'])
+    modes['slave'] = slave_mode
 
 
 # Select mode, and print message if the mode has changed.
@@ -181,7 +194,9 @@ def select_mode(mode, switch_message=None):
     if switch_message:
         print switch_message
     current_mode = mode
-    current_mode.next_scene()
+    # FIXME
+    if hasattr(current_mode, 'next_scene'):
+        current_mode.next_scene()
     return True
 
 
@@ -205,7 +220,9 @@ def handle_action(message):
     print 'action', action
     if action == 'next':
         frame_modifiers -= set(['stop', 'off'])
-        current_mode.next_scene()
+        # FIXME
+        if hasattr(current_mode, 'next_scene'):
+            current_mode.next_scene()
     elif action == 'toggle':
         frame_modifiers ^= set(['off'])
     elif action in ['off', 'stop']:
@@ -238,7 +255,7 @@ def handle_message():
     elif mtype == 'ping':
         print 'pong'
     elif mtype == 'pixels':
-        select_mode(modes['slave'], 'slave mode')
+        select_mode(slave_mode, 'slave mode')
         current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
         frame_modifiers -= set(['stop', 'off'])
@@ -283,31 +300,17 @@ def main(args):
     strip = PixelStrip()
     make_scenes()
     make_modes()
-    current_mode = modes['attract']
+    current_mode = attract_mode
 
     if args.show == 'scenes':
-        print 'scenes:', ', '.join(sorted(scenes.keys()))
-        return
-
-    if args.show == 'sprites':
-        names = (cls.__name__ for cls in Sprite.get_subclasses() if cls not in (Scene, Mode, SlaveMode))
-        print 'sprites:', ', '.join(sorted(names))
+        names = scenes.keys() + list(cls.__name__ for cls in Scene.get_subclasses() if cls not in (Mode,))
+        names = set(lower_first_letter(name) for name in names)
+        print 'scenes:', ', '.join(sorted(list(names)))
         return
 
     if args.scene:
-        scene = scenes.get(args.scene)
-        if not isinstance(scene, Scene):
-            print >> sys.stderr, 'Unknown scene:', args.scene
-            exit(1)
-        select_mode(Mode({scene}))
-
-    if args.sprite:
-        sprite = getattr(sprites, args.sprite[0].capitalize() + args.sprite[1:], None)
-        if not isinstance(sprite, (type, types.ClassType)) or not issubclass(sprite, Sprite):
-            print >> sys.stderr, 'Unknown sprite:', args.sprite
-            exit(1)
-        scene = Scene(sprite)
-        select_mode(Mode({scene}))
+        scene = make_scene(args.scene)
+        select_mode(scene)
 
     if args.speed:
         speed = args.speed
@@ -385,7 +388,7 @@ def do_frame(options):
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if current_mode != modes['slave'] and 'sync' in frame_modifiers:
+        if current_mode != slave_mode and 'sync' in frame_modifiers:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print 'Frame lagging. Time to optimize.'

@@ -3,7 +3,7 @@ from colorsys import hsv_to_rgb
 import numpy as np
 
 
-class Sprite(object):
+class Scene(object):
     @classmethod
     def get_subclasses(cls):
         for subclass in cls.__subclasses__():
@@ -25,7 +25,7 @@ class Sprite(object):
         raise NotImplementedError
 
 
-class Snake(Sprite):
+class Snake(Scene):
     def __init__(self, strip, offset=0, speed=1, length=10, saturation=1.0, brightness=0.5):
         self.offset = float(offset)
         self.length = int(length)
@@ -60,13 +60,13 @@ class Snake(Sprite):
         #     strip.add_hsv(bound(int(x)), h, self.saturation, 1)
 
 
-class Slices(Sprite):
+class Slices(Scene):
     def render(self, strip, t):
         speeds = np.array([.4, .5, .6])
         strip.driver.leds[:, :] = (strip.pos + t * speeds) % 1
 
 
-class EveryNth(Sprite):
+class EveryNth(Scene):
     def __init__(self, strip, offset=0, speed=0.25, factor=0.02, v=0.5):
         self.num = int(len(strip) * factor)
         self.spacing = len(strip) / self.num
@@ -82,7 +82,7 @@ class EveryNth(Sprite):
             strip.add_rgb(x, r, g, b)
 
 
-class Hoop(Sprite):
+class Hoop(Scene):
     def __init__(self, strip, hue=None, saturation=0.5, offset=None, speed=None):
         self.r0 = None
         self.offset = offset or -random.random() / 10
@@ -112,7 +112,7 @@ class Hoop(Sprite):
             strip.add_range_hsv(x0, x1, h, s, v)
 
 
-class Sparkle(Sprite):
+class Sparkle(Scene):
     def __init__(self, strip):
         self.indices = []
         self.last_time = 0
@@ -130,7 +130,7 @@ class Sparkle(Sprite):
             strip.add_hsv(i, *self.hsv[ii])
 
 
-class SparkleFade(Sprite):
+class SparkleFade(Scene):
     """Sparkles that fade over time.
 
     Attributes:
@@ -166,7 +166,7 @@ class SparkleFade(Sprite):
                 strip.add_hsv(i, 0., 0., v)
 
 
-class Sweep(Sprite):
+class Sweep(Scene):
     def __init__(self, strip):
         self.a_speed = 100
         self.r_speed = 0.1
@@ -183,7 +183,7 @@ class Sweep(Sprite):
         strip.driver.leds[:, i] = value
 
 
-class Tunnel(Sprite):
+class Tunnel(Scene):
     def __init__(self, strip):
         self.front_angle = 350.0
         self.back = (self.front_angle + 180.0) % 360
@@ -201,7 +201,7 @@ class Tunnel(Sprite):
             strip.add_rgb(i, r, g, b)
 
 
-class Droplet(Sprite):
+class Droplet(Scene):
     def __init__(self, strip):
         self.speed = 0.3
         self.start_time = None
@@ -225,7 +225,7 @@ class Droplet(Sprite):
             strip.add_hsv(self.indices[i], self.hue, 0., value[i])
 
 
-class Predicate(Sprite):
+class Predicate(Scene):
     def __init__(self, strip, predicate):
         self.f = predicate
 
@@ -235,7 +235,7 @@ class Predicate(Sprite):
                 strip.add_hsv(i, 0, 0, 0.04)
 
 
-class InteractiveWalk(Sprite):
+class InteractiveWalk(Scene):
     def __init__(self, strip):
         self.strip = strip
         self.pos = 124
@@ -253,17 +253,18 @@ class InteractiveWalk(Sprite):
             i = i % len(strip)
             strip.add_hsv(i, 0.3, 0.4, 0.2)
 
-class RedOrGreenSnake(Sprite):
+
+class RedOrGreenSnake(Scene):
     def __init__(self, strip, offset=0, speed=1, brightness=0.3):
         self.head = offset or random.choice(range(len(strip)))
         self.head_f = float(self.head)
         self.brightness = float(brightness)
         self.length = 20
-        self.speed = 1 #speed
-        self.hue = random.choice([0,.33])
+        self.speed = 1
+        self.hue = random.choice([0, .33])
 
     def step(self, strip, _):
-        self.head_f = (self.head_f + self.speed)%len(strip)
+        self.head_f = (self.head_f + self.speed) % len(strip)
         self.head = int(self.head_f) % len(strip)
 
     def render(self, strip, _):
