@@ -15,6 +15,7 @@ from led_geometry import PixelStrip
 import sprites
 from sprites import Scene, EveryNth, Snake, Sparkle, SparkleFade
 
+logger = logging.getLogger('lights')
 strip = None  # initialized in `main`
 
 
@@ -29,17 +30,21 @@ def lower_first_letter(string):
 #
 
 
-def make_scene(scene):
+def make_scene(sceneOrString):
     """Given a Scene instance, class, or class name, return an instance."""
-    obj = scene
-    if isinstance(scene, str):
-        obj = scenes.get(scene, None)
-        obj = obj or getattr(sprites, capitalize_first_letter(scene), None)
+    obj = sceneOrString
+    if isinstance(sceneOrString, str):
+        obj = scenes.get(sceneOrString, None)
+        obj = obj or getattr(sprites, capitalize_first_letter(sceneOrString), None)
     if isinstance(obj, type):
         obj = obj(strip)
     if not isinstance(obj, Scene):
-        raise Exception('Not a scene name: %s' % scene)
+        raise Exception('Not a scene name: %s' % sceneOrString)
     return obj
+
+
+def get_scene_name(scene):
+    return getattr(scene, 'name') or scene.__class__.__name__
 
 
 class MultiScene(Scene):
@@ -107,6 +112,8 @@ def make_scenes():
 # Modes
 #
 
+
+# A mode wraps a scene or scenes
 class Mode(Scene):
     pass
 
@@ -129,7 +136,7 @@ class AttractMode(Mode):
             return
 
         child = random.choice(list(others))
-        print 'selecting mode', child.name
+        print 'selecting mode', get_scene_name(child)
         self.next_child = child
         self.fade_start = None
 
@@ -173,7 +180,7 @@ class SlaveMode(Mode):
         strip.leds = self.pixels
         self.pixels = None
 
-modes = {}
+
 current_mode = None
 
 
@@ -183,18 +190,13 @@ def make_modes():
     attract_mode = AttractMode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'redGreen'])
     slave_mode = SlaveMode()
 
-    modes['attract'] = attract_mode
-    # modes['game'] = Mode(['game'])
-    modes['slave'] = slave_mode
-
 
 # Select mode, and print message if the mode has changed.
-def select_mode(mode, switch_message=None):
+def select_mode(mode):
     global current_mode
     if current_mode == mode:
         return False
-    if switch_message:
-        print switch_message
+    log.info('mode=%s', mode.name)
     current_mode = mode
     # FIXME
     if hasattr(current_mode, 'next_scene'):
@@ -257,11 +259,11 @@ def handle_message():
     elif mtype == 'ping':
         print 'pong'
     elif mtype == 'pixels':
-        select_mode(slave_mode, 'slave mode')
+        select_mode(slave_mode)
         current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
         frame_modifiers -= set(['stop', 'off'])
-        select_mode(game_mode, 'game mode on')
+        select_mode(game_mode)
         key, state = message.get('key'), message.get('state')
         gamekeys = {
             'left': False,
