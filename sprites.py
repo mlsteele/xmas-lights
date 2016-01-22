@@ -25,36 +25,45 @@ class Scene(object):
         raise NotImplementedError
 
 
-class Snake(Scene):
-    def __init__(self, strip, offset=0, speed=1, length=10, saturation=1.0, brightness=0.5):
-        self.offset = float(offset)
-        self.length = int(length)
-        self.speed = 60.0 * speed
-        self.hue_offset = float(offset)
-        self.saturation = float(saturation)
-        self.brightness = float(brightness)
+class Sprite(Scene):
+    def __init__(self, strip, offset=0, speed=60):
+        self.offset = offset or random.choice(range(len(strip)))
+        self.speed = float(speed)
+        self.last_time = None
+
+    def step(self, strip, t):
+        if self.last_time:
+            self.offset += self.speed * (t - self.last_time)
+            self.offset %= len(strip)
+        self.last_time = t
 
     def render(self, strip, t):
-        offset = self.offset + self.speed * t
+        if hasattr(self, 'pixels'):
+            strip.add_rgb_array(int(self.offset), np.array(self.pixels))
+
+
+class Snake(Sprite):
+    def __init__(self, strip, length=10, saturation=1.0, brightness=0.5, **kwargs):
+        super(self.__class__, self).__init__(strip, **kwargs)
+        self.length = int(length)
+        self.hue_offset = float(self.offset)
+        self.saturation = float(saturation)
+        self.brightness = float(brightness)
+        self.pixels = np.zeros((length, 3))
+
+    def step(self, strip, t):
+        super(self.__class__, self).step(strip, t)
         brightness = self.brightness
         length = self.length
-        x = int(offset)
 
-        rgbs = np.zeros((length, 3))
-        h = 0.5 * (self.hue_offset + offset) % len(strip) / len(strip)
-        rgbs[:, :] = hsv_to_rgb(h, self.saturation, 1)
+        pixels = self.pixels
+        h = 0.5 * (self.hue_offset + self.offset) % len(strip) / len(strip)
+        pixels[:, :] = hsv_to_rgb(h, self.saturation, 1)
         brightness = np.arange(0, length) / float(length)
-        rgbs[:, 0] *= brightness
-        rgbs[:, 1] *= brightness
-        rgbs[:, 2] *= brightness
-        strip.add_rgb_array(x % len(strip), rgbs)
+        pixels[:, 0] *= brightness
+        pixels[:, 1] *= brightness
+        pixels[:, 2] *= brightness
 
-        # for i in xrange(length):
-        #     h, v = 0.5 * bound(self.hue_offset + offset + i) / len(strip), brightness * i / length
-        #     strip.add_hsv(bound(x), h, self.saturation, v)
-        #     x += 1
-
-        # # adds ~4% overhead
         # f, x = math.modf(offset + length)
         # if f > 0:
         #     strip.add_hsv(bound(int(x)), h, self.saturation, 1)
@@ -254,19 +263,12 @@ class InteractiveWalk(Scene):
             strip.add_hsv(i, 0.3, 0.4, 0.2)
 
 
-class RedOrGreenSnake(Scene):
-    def __init__(self, strip, offset=0, speed=1, brightness=0.3):
-        self.head = offset or random.choice(range(len(strip)))
-        self.head_f = float(self.head)
+class RedOrGreenSnake(Sprite):
+    def __init__(self, strip, brightness=0.3, **kwargs):
+        super(self.__class__, self).__init__(strip, **kwargs)
         self.brightness = float(brightness)
         self.length = 20
-        self.speed = 1
         self.hue = random.choice([0, .33])
 
-    def step(self, strip, _):
-        self.head_f = (self.head_f + self.speed) % len(strip)
-        self.head = int(self.head_f) % len(strip)
-
-    def render(self, strip, _):
-        h, s, v = self.hue, 1, self.brightness
-        strip.add_range_hsv(self.head, self.head + self.length, h, s, v)
+        r, g, b = hsv_to_rgb(self.hue, 1, self.brightness)
+        self.pixels = [[r, g, b]] * self.length

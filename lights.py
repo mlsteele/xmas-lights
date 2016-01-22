@@ -88,7 +88,9 @@ def make_scenes():
     define_scene('game', sprites.InteractiveWalk)
 
     n = 15
-    children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    print 'speeds', [60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1]) for i in range(n)]
+    children = [Snake(strip, offset=i * len(strip) / float(n), speed=60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    print [s.speed for s in children]
     define_scene('snakes', children)
 
     n = 30
@@ -96,7 +98,7 @@ def make_scenes():
     define_scene('redGreen', children)
 
     n = 15
-    children = [Snake(strip, offset=i * len(strip) / float(n), speed=(1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
+    children = [Snake(strip, offset=i * len(strip) / float(n), speed=60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     children.append(EveryNth(strip, factor=0.1, v=0.3))
     children.append(SparkleFade(strip))
     define_scene('multi', children)
