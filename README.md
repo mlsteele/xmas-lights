@@ -167,6 +167,17 @@ Inside the `xmas-lights` directory:
 The simplest way to deploy the app is to create a Heroku application, add a RabbitMQ add-on, and push
 this repository to the application.
 
+## Automation
+
+To turn the lights on at 7:15 AM and off at 11:30 PM, add these lines to the Pi's crontab:
+
+```
+30 03 * * * /usr/bin/python /home/pi/xmas-lights/publish_message.py off >> /var/log/xmas-lights.log 2> /var/log/xmas-lights.err
+15 12 * * * /usr/bin/python /home/pi/xmas-lights/publish_message.py on >> /var/log/xmas-lights.log 2> /var/log/xmas-lights.err
+```
+
+This assumes the Pi is set to UTC and that it's wintertime (DST) on the East Coast.
+
 ## Credits
 
 `apa102.py` no longer uses Martin Erzberger's [APA-102c LED control lib](https://github.com/tinue/APA102_Pi) library,
