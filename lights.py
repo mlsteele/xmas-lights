@@ -30,21 +30,21 @@ def lower_first_letter(string):
 #
 
 
-def make_scene(sceneOrString):
+def make_scene(scene_or_string):
     """Given a Scene instance, class, or class name, return an instance."""
-    obj = sceneOrString
-    if isinstance(sceneOrString, str):
-        obj = scenes.get(sceneOrString, None)
-        obj = obj or getattr(sprites, capitalize_first_letter(sceneOrString), None)
+    obj = scene_or_string
+    if isinstance(scene_or_string, str):
+        obj = scenes.get(scene_or_string, None)
+        obj = obj or getattr(sprites, capitalize_first_letter(scene_or_string), None)
     if isinstance(obj, type):
         obj = obj(strip)
     if not isinstance(obj, Scene):
-        raise Exception('Not a scene name: %s' % sceneOrString)
+        raise Exception('Not a scene name: %s' % scene_or_string)
     return obj
 
 
 def get_scene_name(scene):
-    return getattr(scene, 'name') or scene.__class__.__name__
+    return getattr(scene, 'name', None) or scene.__class__.__name__
 
 
 class MultiScene(Scene):
@@ -93,9 +93,7 @@ def make_scenes():
     define_scene('game', sprites.InteractiveWalk)
 
     n = 15
-    print 'speeds', [60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1]) for i in range(n)]
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
-    print [s.speed for s in children]
     define_scene('snakes', children)
 
     n = 30
@@ -181,9 +179,6 @@ class SlaveMode(Mode):
         self.pixels = None
 
 
-current_mode = None
-
-
 def make_modes():
     global attract_mode, slave_mode
 
@@ -191,17 +186,100 @@ def make_modes():
     slave_mode = SlaveMode()
 
 
-# Select mode, and print message if the mode has changed.
-def select_mode(mode):
-    global current_mode
-    if current_mode == mode:
-        return False
-    log.info('mode=%s', mode.name)
-    current_mode = mode
-    # FIXME
-    if hasattr(current_mode, 'next_scene'):
-        current_mode.next_scene()
-    return True
+# Modifiers
+#
+
+
+class SceneModifier(object):
+    pass
+
+
+class OffTransitionModifier(SceneModifier):
+    def __init__(self, child):
+        self.mode = 'dimming'
+        self.child = child
+        self.transition_duration = 1.
+        print 'create off'
+
+    def step(self, strip, t):
+        if not hasattr(self, 'transition_start'):
+            self.transition_start = t
+        dt = t - self.transition_start
+        s = dt / self.transition_duration
+        if self.mode == 'dimming':
+            if s >= 1:
+                self.mode = 'off'
+        elif self.mode == 'brightening':
+            s = 1 - s
+            if s >= 1:
+                remove_scene_modifier(self)
+        self.s = min(1, s)
+
+    def post_render(self, strip, t):
+        strip.driver.leds *= self.s
+        # strip.driver.leds[:] = np.max(strip.radius - self.s, 0)
+        if self.mode in ('dimming', 'brightening'):
+            # radius = strip.radius
+            radius = strip.ring_radius[strip.pixel_ring]
+            values = np.interp(1 - radius + 3 * self.s, [0, 1, 2, 3], [0, 0, 1, 0])
+            alpha = np.interp(3 * self.s, [0, 1, 2, 3], [1, 0, 0, 0])
+            strip.driver.leds *= alpha
+            strip.driver.leds[:, :] += values[:, np.newaxis]
+            # strip.driver.leds[:, :] = np.clip(strip.driver.leds, 0, 1)
+        else:
+            strip.driver.leds *= 0
+
+
+class SceneManager(Scene):
+    def __init__(self):
+        self.scene_modifiers = []
+        self.scene = None
+
+    def add_scene_modifier(self, modifier_or_class):
+        modifier_class = modifier_or_class
+        if isinstance(modifier_or_class, SceneModifier):
+            modifier_class = modifier_or_class.__class__
+        if not self.find_scene_modifier(modifier_class):
+            self.scene_modifiers.append(modifier_class(strip))
+
+    def remove_scene_modifier(self, modifier_class):
+        mod = self.find_scene_modifier(modifier_class)
+        if mod:
+            self.scene_modifiers.remove(mod)
+
+    def toggle_scene_modifier(self, modifier_class):
+        if self.find_scene_modifier(modifier_class):
+            self.remove_scene_modifier(modifier_class)
+        else:
+            self.add_scene_modifier(modifier_class)
+
+    def find_scene_modifier(self, modifier_class):
+        return next((mod for mod in self.scene_modifiers if isinstance(mod, modifier_class)), None)
+
+    # Select mode, and print message if the mode has changed.
+    def select_mode(self, scene):
+        if self.scene == scene:
+            return False
+        logger.info('scene=%s', get_scene_name(scene))
+        self.scene = scene
+        self.current_mode = scene
+        # FIXME
+        if hasattr(self.scene, 'next_scene'):
+            self.scene.next_scene()
+
+    def step(self, strip, t):
+        for mod in self.scene_modifiers:
+            mod.step(strip, t)
+        if self.scene:
+            self.scene.step(strip, t)
+
+    def render(self, strip, t):
+        if self.scene:
+            self.scene.render(strip, t)
+        for mod in self.scene_modifiers:
+            mod.post_render(strip, t)
+
+scene_manager = SceneManager()
 
 
 def change_speed_by(factor):
@@ -220,19 +298,24 @@ def change_speed_by(factor):
 
 def handle_action(message):
     global frame_modifiers, spin_count
+
     action = message['action']
     print 'action', action
     if action == 'next':
-        frame_modifiers -= set(['stop', 'off'])
+        scene_manager.add_scene_modifier(OffTransitionModifier)
+        frame_modifiers -= set(['stop'])
         # FIXME
         if hasattr(current_mode, 'next_scene'):
             current_mode.next_scene()
     elif action == 'toggle':
-        frame_modifiers ^= set(['off'])
-    elif action in ['off', 'stop']:
+        scene_manager.toggle_scene_modifier(OffTransitionModifier)
+    elif action in ['off']:
+        scene_manager.add_scene_modifier(OffTransitionModifier)
+    elif action in ['stop']:
         frame_modifiers.add(action)
     elif action in ['start', 'resume', 'on']:
-        frame_modifiers -= set(['stop', 'off'])
+        scene_manager.remove_scene_modifier(OffTransitionModifier)
+        frame_modifiers -= set(['stop'])
     elif action == 'reverse':
         frame_modifiers ^= set(['reverse'])
     elif action == 'spin':
@@ -259,11 +342,12 @@ def handle_message():
     elif mtype == 'ping':
         print 'pong'
     elif mtype == 'pixels':
-        select_mode(slave_mode)
+        scene_manager.select_mode(slave_mode)
         current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
-        frame_modifiers -= set(['stop', 'off'])
-        select_mode(game_mode)
+        scene_manager.remove_scene_modifier(OffTransitionModifier)
+        frame_modifiers -= set(['stop'])
+        scene_manager.select_mode(game_mode)
         key, state = message.get('key'), message.get('state')
         gamekeys = {
             'left': False,
@@ -293,7 +377,7 @@ parser.add_argument('--print-frame-rate', dest='print_frame_rate', action='store
 
 
 def main(args):
-    global current_mode, speed, strip
+    global speed, strip
 
     # must precede PixelStrip constructor
     if args.pygame:
@@ -304,7 +388,7 @@ def main(args):
     strip = PixelStrip()
     make_scenes()
     make_modes()
-    current_mode = attract_mode
+    scene_manager.select_mode(attract_mode)
 
     if args.show == 'scenes':
         names = scenes.keys() + list(cls.__name__ for cls in Scene.get_subclasses() if cls not in (Mode,))
@@ -314,7 +398,7 @@ def main(args):
 
     if args.scene:
         scene = make_scene(args.scene)
-        select_mode(scene)
+        scene_manager.select_mode(scene)
 
     if args.speed:
         speed = args.speed
@@ -354,8 +438,8 @@ def do_frame(options):
     if 'stop' not in frame_modifiers:
         strip.clear()
     if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
-        current_mode.step(strip, synthetic_time)
-        current_mode.render(strip, synthetic_time)
+        scene_manager.step(strip, synthetic_time)
+        scene_manager.render(strip, synthetic_time)
         dtime = IDEAL_FRAME_DELTA_T * speed
         if 'reverse' in frame_modifiers:
             dtime *= -1
@@ -374,9 +458,6 @@ def do_frame(options):
                 strip.leds[i] = 255 - strip.leds[i]
             else:
                 strip.leds[i] = 0xe0 | 1
-    # for i in range(len(strip.leds)):
-    #     if i % 4 is 0:
-    #         strip.leds[i] = 0xe7
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t
@@ -392,7 +473,7 @@ def do_frame(options):
 
     # Slow down to target frame rate
     if delta_t < IDEAL_FRAME_DELTA_T:
-        if current_mode != slave_mode and 'sync' in frame_modifiers:
+        if scene_manager.current_mode != slave_mode and 'sync' in frame_modifiers:
             time.sleep(IDEAL_FRAME_DELTA_T - delta_t)
     elif options.warn:
         print 'Frame lagging. Time to optimize.'
