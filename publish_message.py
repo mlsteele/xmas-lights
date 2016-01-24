@@ -28,7 +28,7 @@ def repl():
 
 
 def main():
-    logger.setLevel(logging.INFO)
+    # logger.setLevel(logging.INFO)
     if not mqtt_config.hostname:
         print >> sys.stderr, 'At least one of these must be set:', ', '.join(mqtt_config.MQTT_ENV_VARS)
         sys.exit(1)
