@@ -138,9 +138,14 @@ class AttractMode(Mode):
         self.next_child = child
         self.fade_start = None
 
-        self.remaining_frames = 400 + random.randrange(400)
+        self.next_scene_time = None
 
     def step(self, strip, t):
+        if not getattr(self, 'next_scene_time', None):
+            self.next_scene_time = t + random.randrange(30, 90)
+        if t > self.next_scene_time:
+            self.next_scene()
+
         self.fade = 0
         if self.next_child:
             self.fade_start = self.fade_start or t
@@ -149,9 +154,6 @@ class AttractMode(Mode):
                 self.current_child = self.next_child
                 self.next_child = None
 
-        self.remaining_frames -= 1
-        if self.remaining_frames <= 0:
-            self.next_scene()
         if self.current_child:
             self.current_child.step(strip, t)
         if self.next_child:
