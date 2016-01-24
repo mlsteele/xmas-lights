@@ -193,7 +193,54 @@ def make_modes():
 
 
 class SceneModifier(object):
-    pass
+    def __init__(self, strip):
+        pass
+
+    def step(self, strip, t):
+        pass
+
+    def post_render(self, strip, t):
+        pass
+
+    def transform_time(self, t):
+        return t
+
+
+class InvertModifier(SceneModifier):
+    def post_render(self, strip, t):
+        pixels = strip.driver.leds
+        pixels[:, :] = (1 - np.clip(pixels[i], 0, 1)) / 2
+
+
+class ReverseModifier(SceneModifier):
+    def transform_time(self, t):
+        return -t
+
+
+class StopModifier(SceneModifier):
+    def step(self, strip, t):
+        if not hasattr(self, 'time'):
+            self.time = t
+
+    def transform_time(self, t):
+        if hasattr(self, 'time'):
+            return self.time
+        return t
+
+
+class SpinModifier(SceneModifier):
+    def __init__(self, child):
+        self.spin_count = 0
+
+    def step(self, strip, t):
+        self.spin_count += 4 * 3
+        if self.spin_count >= 450:
+            scene_manager.remove_scene_modifier(self)
+
+    def post_render(self, strip, t):
+        n = self.spin_count
+        pixels = strip.driver.leds
+        pixels[:] = np.r_[pixels[n:], pixels[:n]]
 
 
 class OffTransitionModifier(SceneModifier):
@@ -214,22 +261,21 @@ class OffTransitionModifier(SceneModifier):
         elif self.mode == 'brightening':
             s = 1 - s
             if s >= 1:
-                remove_scene_modifier(self)
+                scene_manager.remove_scene_modifier(self)
         self.s = min(1, s)
 
     def post_render(self, strip, t):
-        strip.driver.leds *= self.s
-        # strip.driver.leds[:] = np.max(strip.radius - self.s, 0)
+        pixels = strip.driver.leds
+        pixels *= self.s
         if self.mode in ('dimming', 'brightening'):
             # radius = strip.radius
             radius = strip.ring_radius[strip.pixel_ring]
             values = np.interp(1 - radius + 3 * self.s, [0, 1, 2, 3], [0, 0, 1, 0])
             alpha = np.interp(3 * self.s, [0, 1, 2, 3], [1, 0, 0, 0])
-            strip.driver.leds *= alpha
-            strip.driver.leds[:, :] += values[:, np.newaxis]
-            # strip.driver.leds[:, :] = np.clip(strip.driver.leds, 0, 1)
+            pixels *= alpha
+            pixels[:, :] += values[:, np.newaxis]
         else:
-            strip.driver.leds *= 0
+            pixels *= 0
 
 
 class SceneManager(Scene):
@@ -255,7 +301,10 @@ class SceneManager(Scene):
         else:
             self.add_scene_modifier(modifier_class)
 
-    def find_scene_modifier(self, modifier_class):
+    def find_scene_modifier(self, modifier_or_class):
+        modifier_class = modifier_or_class
+        if isinstance(modifier_or_class, SceneModifier):
+            modifier_class = modifier_or_class.__class__
         return next((mod for mod in self.scene_modifiers if isinstance(mod, modifier_class)), None)
 
     # Select mode, and print message if the mode has changed.
@@ -269,16 +318,23 @@ class SceneManager(Scene):
         if hasattr(self.scene, 'next_scene'):
             self.scene.next_scene()
 
+    def compute_time(self, t):
+        for mod in self.scene_modifiers:
+            t = mod.transform_time(t)
+        return t
+
     def step(self, strip, t):
         for mod in self.scene_modifiers:
+            t = mod.transform_time(t)
             mod.step(strip, t)
         if self.scene:
             self.scene.step(strip, t)
 
     def render(self, strip, t):
         if self.scene:
-            self.scene.render(strip, t)
+            self.scene.render(strip, self.compute_time(t))
         for mod in self.scene_modifiers:
+            t = mod.transform_time(t)
             mod.post_render(strip, t)
 
 scene_manager = SceneManager()
@@ -299,13 +355,13 @@ def change_speed_by(factor):
 
 
 def handle_action(message):
-    global frame_modifiers, spin_count
+    global spin_count
 
     action = message['action']
     print 'action', action
     if action == 'next':
         scene_manager.add_scene_modifier(OffTransitionModifier)
-        frame_modifiers -= set(['stop'])
+        scene_manager.remove_scene_modifier(StopModifier)
         # FIXME
         if hasattr(current_mode, 'next_scene'):
             current_mode.next_scene()
@@ -314,15 +370,14 @@ def handle_action(message):
     elif action in ['off']:
         scene_manager.add_scene_modifier(OffTransitionModifier)
     elif action in ['stop']:
-        frame_modifiers.add(action)
+        scene_manager.toggle_scene_modifier(StopModifier)
     elif action in ['start', 'resume', 'on']:
         scene_manager.remove_scene_modifier(OffTransitionModifier)
-        frame_modifiers -= set(['stop'])
+        scene_manager.remove_scene_modifier(StopModifier)
     elif action == 'reverse':
-        frame_modifiers ^= set(['reverse'])
+        scene_manager.toggle_scene_modifier(ReverseModifier)
     elif action == 'spin':
-        frame_modifiers.add('spin')
-        spin_count = 0
+        scene_manager.toggle_scene_modifier(SpinModifier)
     elif action == 'faster':
         change_speed_by(1.5)
     elif action == 'slower':
@@ -332,8 +387,6 @@ def handle_action(message):
 
 
 def handle_message():
-    global frame_modifiers
-
     message = get_message()
     if not message:
         return False
@@ -348,7 +401,7 @@ def handle_message():
         current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
         scene_manager.remove_scene_modifier(OffTransitionModifier)
-        frame_modifiers -= set(['stop'])
+        scene_manager.remove_scene_modifier(StopModifier)
         scene_manager.select_mode(game_mode)
         key, state = message.get('key'), message.get('state')
         gamekeys = {
@@ -437,29 +490,11 @@ def do_frame(options):
     global last_frame_t, last_frame_printed_t, spin_count, synthetic_time
 
     # Render the current frame
-    if 'stop' not in frame_modifiers:
-        strip.clear()
-    if 'stop' not in frame_modifiers and 'off' not in frame_modifiers:
-        scene_manager.step(strip, synthetic_time)
-        scene_manager.render(strip, synthetic_time)
-        dtime = IDEAL_FRAME_DELTA_T * speed
-        if 'reverse' in frame_modifiers:
-            dtime *= -1
-        synthetic_time += dtime
-
-    # Apply modifiers
-    if 'spin' in frame_modifiers:
-        strip.leds = strip.leds[spin_count:] + strip.leds[:spin_count]
-        spin_count += 3 * 4
-        if spin_count >= 450:
-            frame_modifiers.discard('spin')
-    if 'invert' in frame_modifiers:
-        for i in range(len(strip.leds)):
-            if i % 4:
-                # strip.leds[i] = 16 - strip.leds[i] * 16 / 256
-                strip.leds[i] = 255 - strip.leds[i]
-            else:
-                strip.leds[i] = 0xe0 | 1
+    strip.clear()
+    scene_manager.step(strip, synthetic_time)
+    scene_manager.render(strip, synthetic_time)
+    dtime = IDEAL_FRAME_DELTA_T * speed
+    synthetic_time += dtime
 
     frame_t = time.time()
     delta_t = frame_t - last_frame_t
