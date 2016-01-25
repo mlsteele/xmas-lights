@@ -54,6 +54,9 @@ class MultiScene(Scene):
         self.children = [make_scene(child) for child in children]
         self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
+    def __repr__(self):
+        return "<%s %s>" % (self.__class__.__name__, self.name)
+
     def step(self, strip, t):
         for child in self.children:
             child.step(strip, t)
@@ -125,48 +128,54 @@ class AttractMode(Mode):
         self.current_child = None
         self.next_child = None
         self.remaining_frames = 0
+        self.cross_fade_start = None
+        self.next_scene_start = None
 
     def next_scene(self):
         # choose a different child than the current one
         others = self.children - {self.current_child}
+
         # if the mode has only one scene, don't change it
         if not others:
             return
 
         child = random.choice(list(others))
-        print 'selecting mode', get_scene_name(child)
+        print 'selecting scene', get_scene_name(child)
         self.next_child = child
-        self.fade_start = None
-
-        self.next_scene_time = None
+        self.cross_fade_start = None
+        self.next_scene_start = None
 
     def step(self, strip, t):
-        if not getattr(self, 'next_scene_time', None):
-            self.next_scene_time = t + random.randrange(30, 90)
-        if t > self.next_scene_time:
+        if self.next_scene_start is None:
+            self.next_scene_start = t + random.randrange(30, 90)
+
+        if t > self.next_scene_start:
             self.next_scene()
 
-        self.fade = 0
         if self.next_child:
-            self.fade_start = self.fade_start or t
-            self.fade = (t - self.fade_start) * 3
-            if self.fade >= 1:
+            self.cross_fade_start = self.cross_fade_start or t
+            self.cross_fade = (t - self.cross_fade_start) * 3
+            if self.cross_fade >= 1:
                 self.current_child = self.next_child
                 self.next_child = None
 
         if self.current_child:
             self.current_child.step(strip, t)
+
         if self.next_child:
             self.next_child.step(strip, t)
 
     def render(self, strip, t):
+
         if self.current_child:
             self.current_child.render(strip, t)
+
         if self.next_child:
-            leds = np.copy(strip.driver.leds)
+            pixels_0 = np.copy(strip.driver.leds)
             strip.clear()
             self.next_child.render(strip, t)
-            strip.driver.leds = (1 - self.fade) * leds + self.fade * strip.driver.leds
+            pixels_1 = strip.driver.leds
+            strip.driver.leds[:] = (1 - self.cross_fade) * pixels_0 + self.cross_fade * pixels_1
 
 
 class SlaveMode(Mode):
@@ -184,7 +193,8 @@ class SlaveMode(Mode):
 def make_modes():
     global attract_mode, slave_mode
 
-    attract_mode = AttractMode(['multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'redGreen'])
+    attract_mode = AttractMode([
+        'multi', 'snakes', 'nth', 'sparkle', 'tunnel', 'hoops', 'drops', 'sweep', 'slices', 'redGreen'])
     slave_mode = SlaveMode()
 
 
@@ -307,6 +317,10 @@ class SceneManager(Scene):
             modifier_class = modifier_or_class.__class__
         return next((mod for mod in self.scene_modifiers if isinstance(mod, modifier_class)), None)
 
+    def call_method(self, method_name):
+        if hasattr(self.scene, method_name):
+            getattr(self.scene, method_name)()
+
     # Select mode, and print message if the mode has changed.
     def select_mode(self, scene):
         if self.scene == scene:
@@ -314,9 +328,7 @@ class SceneManager(Scene):
         logger.info('scene=%s', get_scene_name(scene))
         self.scene = scene
         self.current_mode = scene
-        # FIXME
-        if hasattr(self.scene, 'next_scene'):
-            self.scene.next_scene()
+        self.call_method('next_scene')
 
     def compute_time(self, t):
         for mod in self.scene_modifiers:
@@ -360,11 +372,9 @@ def handle_action(message):
     action = message['action']
     print 'action', action
     if action == 'next':
-        scene_manager.add_scene_modifier(OffTransitionModifier)
+        scene_manager.remove_scene_modifier(OffTransitionModifier)
         scene_manager.remove_scene_modifier(StopModifier)
-        # FIXME
-        if hasattr(current_mode, 'next_scene'):
-            current_mode.next_scene()
+        scene_manager.call_method('next_scene')
     elif action == 'toggle':
         scene_manager.toggle_scene_modifier(OffTransitionModifier)
     elif action in ['off']:
@@ -398,7 +408,7 @@ def handle_message():
         print 'pong'
     elif mtype == 'pixels':
         scene_manager.select_mode(slave_mode)
-        current_mode.pixels = json.loads(str(message['leds']))
+        scene_manager.current_mode.pixels = json.loads(str(message['leds']))
     elif mtype == 'gamekey':
         scene_manager.remove_scene_modifier(OffTransitionModifier)
         scene_manager.remove_scene_modifier(StopModifier)
