@@ -14,6 +14,9 @@ class Scene(object):
     def __init__(self, strip):
         pass
 
+    def __str__(self):
+        return self.__class__.__name__
+
     def handle_game_keys(self, keys):
         pass
 

@@ -43,19 +43,17 @@ def make_scene(scene_or_string):
     return obj
 
 
-def get_scene_name(scene):
-    return getattr(scene, 'name', None) or scene.__class__.__name__
-
-
 class MultiScene(Scene):
     def __init__(self, children=(), name=None):
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
         self.children = [make_scene(child) for child in children]
-        self.name = name or self.children[0].__class__.__name__ if self.children else 'empty'
+        self.__name__ = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.name)
+        if self.__name__:
+            return "<%s %s>" % (self.__class__.__name__, self.__name__)
+        return "<%s %s>" % (self.__class__.__name__, ' + '.join(set(str(child) for child in self.children)))
 
     def step(self, strip, t):
         for child in self.children:
@@ -140,7 +138,7 @@ class AttractMode(Mode):
             return
 
         child = random.choice(list(others))
-        print 'selecting scene', get_scene_name(child)
+        print 'selecting scene', child
         self.next_child = child
         self.cross_fade_start = None
         self.next_scene_start = None
@@ -325,7 +323,7 @@ class SceneManager(Scene):
     def select_mode(self, scene):
         if self.scene == scene:
             return False
-        logger.info('scene=%s', get_scene_name(scene))
+        logger.info('scene=%s', scene)
         self.scene = scene
         self.current_mode = scene
         self.call_method('next_scene')
