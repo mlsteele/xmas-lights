@@ -32,9 +32,10 @@ def lower_first_letter(string):
 
 def make_scene(scene_or_string):
     """Given a Scene instance, class, or class name, return an instance."""
+
     obj = scene_or_string
     if isinstance(scene_or_string, str):
-        obj = scenes.get(scene_or_string, None)
+        obj = MultiScene.get_scene(scene_or_string)
         obj = obj or getattr(sprites, capitalize_first_letter(scene_or_string), None)
     if isinstance(obj, type):
         obj = obj(strip)
@@ -44,6 +45,20 @@ def make_scene(scene_or_string):
 
 
 class MultiScene(Scene):
+    _named_instances = {}
+
+    @classmethod
+    def create(cls, name, children):
+        cls._named_instances[name] = MultiScene(children, name)
+
+    @classmethod
+    def get_scene(cls, name):
+        return cls._named_instances.get(name, None)
+
+    @classmethod
+    def get_scene_names(cls):
+        return cls._named_instances.keys()
+
     def __init__(self, children=(), name=None):
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
@@ -64,48 +79,41 @@ class MultiScene(Scene):
             child.render(strip, t)
 
 
-scenes = {}
-
-
-def define_scene(name, children):
-    scenes[name] = MultiScene(children, name)
-
-
 def make_scenes():
-    define_scene('empty', [])
+    MultiScene.create('empty', [])
 
-    define_scene('nth', [EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
+    MultiScene.create('nth', [EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
 
-    define_scene('sparkle', [Sparkle, SparkleFade])
+    MultiScene.create('sparkle', [Sparkle, SparkleFade])
 
-    # define_scene('gradient', Snake(speed=1, length=len(strip), saturation=0, brightness=1)
+    # MultiScene.create('gradient', Snake(speed=1, length=len(strip), saturation=0, brightness=1)
 
-    define_scene('gradient', [
+    MultiScene.create('gradient', [
         sprites.Hoop(strip, offset=0, speed=0.1, hue=0),
         sprites.Hoop(strip, offset=1 / 4.0, speed=0.1, hue=1 / 3.0),
         sprites.Hoop(strip, offset=2 / 4.0, speed=0.1, hue=2 / 3.0),
         sprites.Hoop(strip, offset=3 / 4.0, speed=0.1, saturation=0),
     ])
 
-    define_scene('hoops', (sprites.Hoop for _ in range(3)))
+    MultiScene.create('hoops', (sprites.Hoop for _ in range(3)))
 
-    define_scene('drops', (sprites.Droplet for _ in range(10)))
+    MultiScene.create('drops', (sprites.Droplet for _ in range(10)))
 
-    define_scene('game', sprites.InteractiveWalk)
+    MultiScene.create('game', sprites.InteractiveWalk)
 
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
-    define_scene('snakes', children)
+    MultiScene.create('snakes', children)
 
     n = 30
     children = [sprites.RedOrGreenSnake(strip, offset=i * len(strip) / float(n)) for i in range(n)]
-    define_scene('redGreen', children)
+    MultiScene.create('redGreen', children)
 
     n = 15
     children = [Snake(strip, offset=i * len(strip) / float(n), speed=60 * (1 + (0.3 * i)) / 4 * random.choice([1, -1])) for i in range(n)]
     children.append(EveryNth(strip, factor=0.1, v=0.3))
     children.append(SparkleFade(strip))
-    define_scene('multi', children)
+    MultiScene.create('multi', children)
 
 
 # Modes
@@ -454,7 +462,7 @@ def main(args):
     scene_manager.select_mode(attract_mode)
 
     if args.show == 'scenes':
-        names = scenes.keys() + list(cls.__name__ for cls in Scene.get_subclasses() if cls not in (Mode,))
+        names = MultiScene.get_scene_names() + list(cls.__name__ for cls in Scene.get_subclasses() if cls not in (Mode,))
         names = set(lower_first_letter(name) for name in names)
         print 'scenes:', ', '.join(sorted(list(names)))
         return
