@@ -30,9 +30,8 @@ def lower_first_letter(string):
 #
 
 
-def make_scene(scene_or_string):
+def create_scene(scene_or_string):
     """Given a Scene instance, class, or class name, return an instance."""
-
     obj = scene_or_string
     if isinstance(scene_or_string, str):
         obj = MultiScene.get_scene(scene_or_string)
@@ -62,7 +61,7 @@ class MultiScene(Scene):
     def __init__(self, children=(), name=None):
         if not isinstance(children, (types.GeneratorType, collections.Sequence)):
             children = [children]
-        self.children = [make_scene(child) for child in children]
+        self.children = [create_scene(child) for child in children]
         self.__name__ = name or self.children[0].__class__.__name__ if self.children else 'empty'
 
     def __repr__(self):
@@ -79,7 +78,7 @@ class MultiScene(Scene):
             child.render(strip, t)
 
 
-def make_scenes():
+def create_scenes():
     MultiScene.create('empty', [])
 
     MultiScene.create('nth', [EveryNth(strip, factor=0.1), EveryNth(strip, factor=0.101)])
@@ -128,7 +127,7 @@ class Mode(Scene):
 # Attract mode is a scene that iterates through child scenes.
 class AttractMode(Mode):
     def __init__(self, children=frozenset()):
-        self.children = frozenset(make_scene(child) for child in children)
+        self.children = frozenset(create_scene(child) for child in children)
         if len(self.children) == 1:
             self.child = list(self.children)[0]
         self.current_child = None
@@ -457,7 +456,7 @@ def main(args):
     # strip must be initialized before scenes.
     # scenes must be intiialized before modes, and before '--scene' and '--scenes' handling
     strip = PixelStrip()
-    make_scenes()
+    create_scenes()
     make_modes()
     scene_manager.select_mode(attract_mode)
 
@@ -468,7 +467,7 @@ def main(args):
         return
 
     if args.scene:
-        scene = make_scene(args.scene)
+        scene = create_scene(args.scene)
         scene_manager.select_mode(scene)
 
     if args.speed:
